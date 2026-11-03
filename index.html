@@ -296,7 +296,7 @@ dialog input,dialog select{width:100%}
 
 <script>
 // =====================================================================
-// 🔥 FIREBASE KONFIGURATION (Bereits vollständig eingerichtet)
+// 🔥 FIREBASE KONFIGURATION
 // =====================================================================
 var firebaseConfig = {
   apiKey: "AIzaSyBH4kCFQRjnBbd4cJDDuGSxJbRQAnUQWHw",
@@ -308,17 +308,39 @@ var firebaseConfig = {
   appId: "1:432112365589:web:9af0cdb510f2380935de1c"
 };
 
-var currentUser = null;
-var authReady = false;
+// =====================================================================
+// 🔒 WHITELIST
+// =====================================================================
+var ALLOWED_USERS = {
+  "johnlp1350@gmail.com": "admin", // Poki + Admin!
+  "stahmeln05@gmail.com": "j2",    // Tabi
+  "lucioosy@gmail.com": "j4",      // Kiri
+  "LIVIN_EMAIL_HIER_EINTRAGEN": "j1" // Livin (später hier eintragen)
+};
 
-// Firebase initialisieren
+var currentUser = null;
+
 try {
   firebase.initializeApp(firebaseConfig);
   firebase.auth().onAuthStateChanged(function(user) {
-    currentUser = user;
-    authReady = true;
     if (user) {
-      pull(true);
+      var email = (user.email || "").toLowerCase();
+      if (ALLOWED_USERS.hasOwnProperty(email)) {
+        currentUser = user;
+        me = ALLOWED_USERS[email];
+        localStorage.setItem("esc-me", me);
+        localStorage.setItem("esc-joined", "true");
+        pull(true);
+      } else {
+        firebase.auth().signOut().then(function() {
+          currentUser = null;
+          showAlert("Zugriff verweigert", "Das Google-Konto (" + email + ") ist nicht freigeschaltet!");
+          render();
+        });
+        return;
+      }
+    } else {
+      currentUser = null;
     }
     render();
   });
@@ -329,9 +351,13 @@ try {
 function loginGoogle() {
   var provider = new firebase.auth.GoogleAuthProvider();
   firebase.auth().signInWithPopup(provider).then(function(result) {
-    currentUser = result.user;
-    showAlert("Erfolgreich angemeldet", "Willkommen, " + (currentUser.displayName || currentUser.email) + "!");
-    render();
+    var email = (result.user.email || "").toLowerCase();
+    if (!ALLOWED_USERS.hasOwnProperty(email)) {
+      firebase.auth().signOut();
+      showAlert("Zugriff verweigert", "Das Konto " + email + " ist nicht in der Whitelist.");
+    } else {
+      showAlert("Erfolgreich", "Willkommen, " + (result.user.displayName || email) + "!");
+    }
   }).catch(function(error) {
     showAlert("Login Fehler", error.message);
   });
@@ -344,7 +370,6 @@ function logoutGoogle() {
   });
 }
 
-// Hilfsfunktion: Auth-Token für Realtime Database Anfragen holen
 function getAuthToken(callback) {
   if (currentUser) {
     currentUser.getIdToken().then(function(token) {
@@ -356,7 +381,6 @@ function getAuthToken(callback) {
     callback(null);
   }
 }
-// =====================================================================
 
 var COUNTRIES=[
   ["af","Afghanistan"],["al","Albania"],["am","Armenia"],["au","Australia"],["at","Austria"],["az","Azerbaijan"],
@@ -410,7 +434,7 @@ function load(){
   return fresh();
 }
 var S=load();
-var me=localStorage.getItem(MEKEY)||"j1";
+var me=localStorage.getItem(MEKEY)||"admin";
 var ui={big:null,q:"",view:"home",yearId:null,tab:"sf1",subTab:"points",sortMode:"order",ovSubTab:"semis",sbShow:"final",editMode:false,assign:null,editSong:null,libYear:"",libSort:"name",compareCc:null,enter:false};
 
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){showAlert("Error", "Could not save.");}push();}
@@ -541,7 +565,7 @@ function pull(first){
 
 var songById=function(id){ for(var i=0; i<S.songs.length; i++) if(S.songs[i].id===id) return S.songs[i]; return null; };
 var yearObj=function(id){ for(var i=0; i<S.years.length; i++) if(S.years[i].id===id) return S.years[i]; return null; };
-var jname=function(id){ if(id === "admin") return "Admin"; for(var i=0; i<S.jury.length; i++) if(S.jury[i].id===id) return S.jury[i].name; return id; };
+var jname=function(id){ if(id === "admin") return "Poki (Admin)"; for(var i=0; i<S.jury.length; i++) if(S.jury[i].id===id) return S.jury[i].name; return id; };
 function findEntry(id){
   for(var i=0;i<S.years.length;i++){
     var y=S.years[i];
@@ -594,7 +618,7 @@ function render(){
 }
 
 function header(){
-  var currentName = (me === "admin") ? "👑 Admin" : "👤 " + esc(jname(me));
+  var currentName = (me === "admin") ? "👑 Poki (Admin)" : "👤 " + esc(jname(me));
   
   var authHtml = "";
   if (currentUser) {
@@ -736,7 +760,7 @@ function liveModeView(sh){
   var juryRatingBox = '';
   for(var j=0; j<S.jury.length; j++){
     var jur = S.jury[j], val = r[jur.id];
-    var isMe = (jur.id === me) || (me === "admin");
+    var isMe = (jur.id === me) || (me === "admin" && jur.id === "j3");
     var displayVal = (val!==undefined&&val!==null) ? val : '–';
     var clickEvent = isMe ? 'data-act="openPick" data-e="'+currentEntry.id+'" data-jur="'+jur.id+'" title="Punkte ändern"' : 'data-act="openPick" data-e="'+currentEntry.id+'" data-jur="'+jur.id+'"';
     
@@ -957,7 +981,9 @@ function showView(sh){
       } else {
         var tipsHtml = "";
         for(var j=0; j<S.jury.length; j++){
-          var jur = S.jury[j], jQual = qp[jur.id], isMe = (jur.id === me) || (me === "admin"), isCurrentProfile = (jur.id === me) || (me === "admin");
+          var jur = S.jury[j], jQual = qp[jur.id];
+          var isCurrentProfile = (jur.id === me) || (me === "admin" && jur.id === "j3");
+          var isMe = isCurrentProfile || (me === "admin");
           var txt = jQual === false ? "NQ" : "–";
           var bg = "var(--panel2)", col = "var(--muted)", border = "2.5px solid transparent", extraClass = "";
           
@@ -980,7 +1006,8 @@ function showView(sh){
 
       var tiles = "";
       for(var j=0; j<S.jury.length; j++){
-        var jur = S.jury[j], v = r[jur.id], isMe = (jur.id === me) || (me === "admin");
+        var jur = S.jury[j], v = r[jur.id];
+        var isMe = (jur.id === me) || (me === "admin" && jur.id === "j3");
         var cls = "tile" + (isMe?" me":"") + (v!==undefined&&v!==null?"":" empty");
         var inner = "<small>"+esc(lab[j])+"</small><b>"+(v!==undefined&&v!==null?v:"–")+"</b>";
         
@@ -1271,7 +1298,7 @@ function openDetailModal(eId){
 
   if(!s){ openPicker(eId); return; }
 
-  var activeJuryId = (me === "admin") ? (S.jury[0] ? S.jury[0].id : "j1") : me;
+  var activeJuryId = (me === "admin") ? "j3" : me;
   var val = r[activeJuryId];
 
   var row1="", row2="";
