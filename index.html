@@ -7,6 +7,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;800&family=Plus+Jakarta+Sans:wght@400;600;700&family=Protest+Strike&display=swap" rel="stylesheet">
+
+<!-- Firebase App & Auth SDKs -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+
 <style>
 :root{
   --bg:#06020f; --panel:#110624; --panel2:#1a0b35; --line:#32195f;
@@ -290,6 +295,69 @@ dialog input,dialog select{width:100%}
 <dialog id="dlg"></dialog>
 
 <script>
+// =====================================================================
+// 🔥 FIREBASE KONFIGURATION (Bereits vollständig eingerichtet)
+// =====================================================================
+var firebaseConfig = {
+  apiKey: "AIzaSyBH4kCFQRjnBbd4cJDDuGSxJbRQAnUQWHw",
+  authDomain: "esc-connect-7bdfe.firebaseapp.com",
+  databaseURL: "https://esc-connect-7bdfe-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "esc-connect-7bdfe",
+  storageBucket: "esc-connect-7bdfe.firebasestorage.app",
+  messagingSenderId: "432112365589",
+  appId: "1:432112365589:web:9af0cdb510f2380935de1c"
+};
+
+var currentUser = null;
+var authReady = false;
+
+// Firebase initialisieren
+try {
+  firebase.initializeApp(firebaseConfig);
+  firebase.auth().onAuthStateChanged(function(user) {
+    currentUser = user;
+    authReady = true;
+    if (user) {
+      pull(true);
+    }
+    render();
+  });
+} catch(err) {
+  console.warn("Firebase Init Fehler:", err);
+}
+
+function loginGoogle() {
+  var provider = new firebase.auth.GoogleAuthProvider();
+  firebase.auth().signInWithPopup(provider).then(function(result) {
+    currentUser = result.user;
+    showAlert("Erfolgreich angemeldet", "Willkommen, " + (currentUser.displayName || currentUser.email) + "!");
+    render();
+  }).catch(function(error) {
+    showAlert("Login Fehler", error.message);
+  });
+}
+
+function logoutGoogle() {
+  firebase.auth().signOut().then(function() {
+    currentUser = null;
+    render();
+  });
+}
+
+// Hilfsfunktion: Auth-Token für Realtime Database Anfragen holen
+function getAuthToken(callback) {
+  if (currentUser) {
+    currentUser.getIdToken().then(function(token) {
+      callback(token);
+    }).catch(function() {
+      callback(null);
+    });
+  } else {
+    callback(null);
+  }
+}
+// =====================================================================
+
 var COUNTRIES=[
   ["af","Afghanistan"],["al","Albania"],["am","Armenia"],["au","Australia"],["at","Austria"],["az","Azerbaijan"],
   ["bh","Bahrain"],["bd","Bangladesh"],["by","Belarus"],["be","Belgium"],["bt","Bhutan"],["ba","Bosnia and Herzegovina"],
@@ -363,7 +431,7 @@ function openConfirm(title, text, onYes) {
   if (!dlg.open) dlg.showModal();
 }
 
-var DB=(localStorage.getItem("esc-db")||"https://esc-connect-7bdfe-default-rtdb.europe-west1.firebasedatabase.app").replace(/\/+$/,"");
+var DB=(localStorage.getItem("esc-db")||firebaseConfig.databaseURL||"https://esc-connect-7bdfe-default-rtdb.europe-west1.firebasedatabase.app").replace(/\/+$/,"");
 var lastFlat={},busy=0,net=DB?"connecting":"local";
 
 function sortShowsList(list){
@@ -446,22 +514,29 @@ function push(){
   for(var k in lastFlat)if(!(k in cur))p[k]=null;
   if(!Object.keys(p).length)return;
   var prev=lastFlat;lastFlat=cur;busy++;
-  fetch(DB+"/.json",{method:"PATCH",body:JSON.stringify(p)}).then(function(r){if(!r.ok)throw 0;net="online";}).catch(function(){lastFlat=prev;net="error";}).finally(function(){busy--;});
+
+  getAuthToken(function(token) {
+    var url = DB + "/.json" + (token ? "?auth=" + encodeURIComponent(token) : "");
+    fetch(url,{method:"PATCH",body:JSON.stringify(p)}).then(function(r){if(!r.ok)throw 0;net="online";}).catch(function(){lastFlat=prev;net="error";}).finally(function(){busy--;});
+  });
 }
 
 function pull(first){
   if(!DB||busy)return;
-  fetch(DB+"/.json").then(function(res){return res.json();}).then(function(t){
-    net="online";
-    if(!t){if(first===true)push();return;}
-    var f=flat(t);
-    if(same(f,lastFlat)) return;
-    var a=document.activeElement;
-    if(first!==true&&(dlg.open||(a&&/INPUT|SELECT|TEXTAREA/.test(a.tagName))))return;
-    S=fromTree(t);lastFlat=f;
-    try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}
-    render();
-  }).catch(function(){net="error";});
+  getAuthToken(function(token) {
+    var url = DB + "/.json" + (token ? "?auth=" + encodeURIComponent(token) : "");
+    fetch(url).then(function(res){return res.json();}).then(function(t){
+      net="online";
+      if(!t){if(first===true)push();return;}
+      var f=flat(t);
+      if(same(f,lastFlat)) return;
+      var a=document.activeElement;
+      if(first!==true&&(dlg.open||(a&&/INPUT|SELECT|TEXTAREA/.test(a.tagName))))return;
+      S=fromTree(t);lastFlat=f;
+      try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}
+      render();
+    }).catch(function(){net="error";});
+  });
 }
 
 var songById=function(id){ for(var i=0; i<S.songs.length; i++) if(S.songs[i].id===id) return S.songs[i]; return null; };
@@ -508,7 +583,6 @@ function render(){
 
   $("#app").innerHTML = header() + mainHtml;
   
-  // Show FAB only in main menu (view === "home" and no yearId)
   var fabContainer = $("#fab_container");
   if(ui.view === "home" && !ui.yearId){
     fabContainer.innerHTML = '<button class="fab" data-act="openNewYearDlg" title="Add new contest">＋</button>';
@@ -521,9 +595,24 @@ function render(){
 
 function header(){
   var currentName = (me === "admin") ? "👑 Admin" : "👤 " + esc(jname(me));
+  
+  var authHtml = "";
+  if (currentUser) {
+    authHtml = '<div style="display:flex;align-items:center;gap:8px;background:var(--panel2);padding:4px 10px;border-radius:999px;border:1px solid var(--line);">' +
+      (currentUser.photoURL ? '<img src="'+esc(currentUser.photoURL)+'" style="width:24px;height:24px;border-radius:50%;object-fit:cover;" alt="Avatar">' : '') +
+      '<span style="font-size:0.85rem;font-weight:700;color:var(--ink);">'+esc(currentUser.displayName || currentUser.email)+'</span>' +
+      '<button class="ghost sm danger" data-act="logoutGoogle" style="padding:2px 8px;font-size:0.75rem;">Logout</button>' +
+    '</div>';
+  } else {
+    authHtml = '<button data-act="loginGoogle" style="display:inline-flex;align-items:center;gap:6px;background:#4285f4;border-color:#4285f4;color:#fff;font-weight:700;padding:6px 14px;border-radius:999px;">' +
+      '<svg style="width:14px;height:14px;fill:currentColor" viewBox="0 0 24 24"><path d="M21.35 11.1h-9.17v2.98h5.37c-.24 1.25-.97 2.31-2.07 3.03v2.49h3.33c1.95-1.8 3.08-4.45 3.08-7.5 0-.67-.06-1.33-.17-1.95z"/><path d="M12.18 21c2.75 0 5.06-.91 6.75-2.49l-3.33-2.49c-.91.61-2.08.97-3.42.97-2.63 0-4.86-1.78-5.66-4.17H3.04v2.57C4.74 18.76 8.21 21 12.18 21z"/><path d="M6.52 12.82c-.2-.61-.32-1.26-.32-1.93s.12-1.32.32-1.93V6.39H3.04C2.37 7.72 2 9.21 2 10.89s.37 3.17 1.04 4.5l3.48-2.57z"/><path d="M12.18 4.78c1.5 0 2.85.52 3.91 1.52l2.93-2.93C17.23 1.67 14.92.78 12.18.78 8.21.78 4.74 3.02 3.04 6.39l3.48 2.57c.8-2.39 3.03-4.17 5.66-4.17z"/></svg> Google Login' +
+    '</button>';
+  }
+
   return '<header>'+
     '<div class="brand">Eurovision Song Contest Scoreboard</div>'+
     '<div class="who">'+
+      authHtml +
       '<button class="ghost" data-act="openWelcomeModal" style="font-weight:700;color:var(--gold);border:1px solid var(--gold);padding:6px 14px;background:rgba(255,209,102,0.1)">'+currentName+'</button>'+
       '<button class="ghost" data-act="settings" title="Settings, Export, Import" style="padding:6px 14px;background:var(--panel2)">⚙️ Settings</button>'+
     '</div></header>';
@@ -601,7 +690,6 @@ function yearView(){
   }
 
   var headerSection = '<h1 class="yeartitle" style="text-align:center;margin-bottom:'+(hostDisplay?'4px':'24px')+'">Eurovision '+esc(titleLabel)+'</h1>' + hostDisplay;
-
   var liveBtnStyle = liveActive ? 'background:#ff2d95;color:#fff;border-color:#ff2d95;font-weight:700;' : 'background:var(--panel2);color:var(--gold);border-color:var(--gold);font-weight:700;';
 
   var tabNav = '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;margin-bottom:16px;border-bottom:1px solid var(--line);padding-bottom:12px;">'+
@@ -650,7 +738,6 @@ function liveModeView(sh){
     var jur = S.jury[j], val = r[jur.id];
     var isMe = (jur.id === me) || (me === "admin");
     var displayVal = (val!==undefined&&val!==null) ? val : '–';
-    
     var clickEvent = isMe ? 'data-act="openPick" data-e="'+currentEntry.id+'" data-jur="'+jur.id+'" title="Punkte ändern"' : 'data-act="openPick" data-e="'+currentEntry.id+'" data-jur="'+jur.id+'"';
     
     juryRatingBox += '<div style="background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px 12px;text-align:center;flex:1;min-width:90px;'+(val?pc(val):'')+'">' +
@@ -1288,6 +1375,9 @@ function openJsonEditor(){
 }
 
 var A={
+  loginGoogle:function(){ loginGoogle(); return "keep"; },
+  logoutGoogle:function(){ logoutGoogle(); return "keep"; },
+
   selectWho:function(t){ me = t.dataset.id; localStorage.setItem(MEKEY, me); localStorage.setItem("esc-joined", "true"); dlg.close(); ui.enter=true; render(); return "keep"; },
   openWelcomeModal:function(){ openWelcomeModal(); return "keep"; },
   toggleEditMode:function(){ ui.editMode = !ui.editMode; render(); },
