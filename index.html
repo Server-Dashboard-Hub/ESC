@@ -1469,7 +1469,7 @@ function showView(sh){
       var glowStyle = (st.totalGuessed > 0 && st.correct === st.totalGuessed) ? 'color:var(--gold);' : 'color:var(--muted);';
       nqExtra = ' <span style="font-size:0.7rem;font-weight:700;border-left:1px solid var(--line);padding-left:8px;'+glowStyle+'">' + st.correct + ' / ' + st.totalGuessed + ' NQs</span>';
     }
-    juryBubblesHtml += '<div style="background:var(--panel2-solid);border:1px solid var(--line);padding:7px 14px;border-radius:999px;font-size:0.83rem;font-weight:700;display:inline-flex;align-items:center;gap:8px;"><span style="color:var(--ink)">'+esc(S.jury[j].name)+'</span><span style="'+ptsCol+'">'+ptsText+'</span>'+nqeExtra+'</div>';
+    juryBubblesHtml += '<div style="background:var(--panel2-solid);border:1px solid var(--line);padding:7px 14px;border-radius:999px;font-size:0.83rem;font-weight:700;display:inline-flex;align-items:center;gap:8px;"><span style="color:var(--ink)">'+esc(S.jury[j].name)+'</span><span style="'+ptsCol+'">'+ptsText+'</span>'+nqExtra+'</div>';
   }
   juryBubblesHtml += '</div>';
 
