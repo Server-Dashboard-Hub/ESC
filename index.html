@@ -28,6 +28,7 @@
   --gold:#ffd166;
   --green:#4ade80;
   --red:#ff4d6d;
+  --blue:#3b82f6;
   --display:"Sora","Segoe UI",system-ui,sans-serif;
   --body:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --number-font:"Protest Strike",sans-serif;
@@ -68,10 +69,6 @@ body{
   0%, 100% { box-shadow: 0 0 0 0 rgba(255,45,149,0.7); }
   50% { box-shadow: 0 0 0 8px rgba(255,45,149,0); }
 }
-@keyframes gradientFlow {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-}
 @keyframes flashUpdate {
   0% { background-color: rgba(255,209,102,0.6); box-shadow: 0 0 20px rgba(255,209,102,0.9); transform: scale(1.06); }
   100% { background-color: transparent; box-shadow: none; transform: scale(1); }
@@ -88,11 +85,6 @@ body{
 header{
   display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
   padding:18px 0;border-bottom:1px solid var(--line);position:relative;
-}
-header::after{
-  content:"";position:absolute;bottom:-1px;left:0;right:0;height:1px;
-  background:linear-gradient(90deg, transparent, var(--pink), var(--violet), var(--cyan), transparent);
-  opacity:0.6;
 }
 .brand{
   font-family:var(--display);font-weight:800;font-size:1.1rem;letter-spacing:-0.01em;
@@ -166,7 +158,6 @@ button:disabled{opacity:.35;cursor:not-allowed;transform:none!important;box-shad
   background:linear-gradient(135deg, #ff2d95 0%, #ffd166 35%, #a855f7 65%, #22d3ee 100%);
   background-size:200% 200%;
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-  animation: gradientFlow 8s ease infinite;
 }
 
 h2{font-family:var(--display);font-size:1.5rem;margin:0;letter-spacing:-0.015em;font-weight:800}
@@ -285,7 +276,6 @@ h3{font-family:var(--display);margin:0 0 12px;font-weight:700;letter-spacing:-0.
 
 .row-content{ display:flex;flex-direction:column;gap:6px;min-width:0;align-items:flex-end;text-align:right; }
 
-/* KEY FIX: meta shrinks dynamically, no ellipsis */
 .meta{
   display:flex;align-items:center;justify-content:flex-end;gap:8px;
   text-shadow: 0 1px 3px rgba(0,0,0,0.95);
@@ -342,14 +332,17 @@ h3{font-family:var(--display);margin:0 0 12px;font-weight:700;letter-spacing:-0.
   line-height:1;letter-spacing:0.02em;
 }
 .tile.empty{background:var(--panel2-solid);color:var(--muted)}
-.tile.me{border-color:#fff}
 
+/* AQ Tile (Auto Qualifier) - Blue */
 .tile.aq-tile{
-  background:linear-gradient(135deg,#a855f7,#7c3aed);
-  color:#fff;border:2.5px solid transparent;
+  background:linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+  color:#fff;
+  border:2.5px solid #60a5fa !important;
   cursor:default;pointer-events:none;
 }
-.tile.aq-tile small{ background: rgba(0,0,0,0.3); }
+.tile.aq-tile small{ background: rgba(0,0,0,0.25); border-bottom-color: rgba(0,0,0,0.2); }
+
+.tile.me{border-color:#fff}
 
 .tile.tip-hidden { opacity: 0; pointer-events: none; transform: scale(0.92); transition: opacity 0.15s ease, transform 0.15s ease; }
 .row:hover .tile.tip-hidden { opacity: 1; pointer-events: auto; transform: scale(1); }
@@ -408,7 +401,7 @@ td input[type=number]{width:70px}
 
 .autofinal{
   display:inline-block;
-  background:linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
+  background:linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
   color:#fff;border-radius:6px;padding:2px 7px;
   font-size:0.6rem;font-weight:800;margin-left:4px;
   white-space:nowrap;flex-shrink:0;letter-spacing:0.05em;
@@ -421,12 +414,7 @@ dialog{
   width:min(460px,92vw);
   animation: popIn 0.2s ease-out forwards;
   box-shadow:0 24px 60px rgba(0,0,0,0.75);
-  position:relative;overflow:hidden;
-}
-dialog::before{
-  content:"";position:absolute;top:0;left:0;right:0;height:3px;
-  background:linear-gradient(90deg, var(--pink), var(--violet), var(--cyan));
-  z-index:1;
+  position:relative;
 }
 dialog.wide{width:min(540px,92vw)}
 dialog::backdrop{background:rgba(3,1,10,0.85);animation:fadeIn .2s ease}
@@ -500,8 +488,10 @@ dialog input,dialog select{width:100%}
   border:1px solid var(--line);border-radius:12px;padding:10px;
   text-align:center;margin-bottom:14px;color:var(--ink);
 }
-.ov-row-item{display:flex;align-items:center;gap:6px;margin-bottom:6px;justify-content:space-between}
-.ov-pts{display:flex;gap:3px;flex-shrink:0}
+
+/* New condensed layout for ov-row-item */
+.ov-row-item{display:flex;align-items:center;gap:12px;margin-bottom:6px;}
+.ov-pts{display:flex;gap:3px;flex-shrink:0;}
 .ov-pt{
   width:30px;height:30px;display:grid;place-items:center;
   font-family:var(--number-font);font-size:0.95rem;
@@ -509,24 +499,22 @@ dialog input,dialog select{width:100%}
   letter-spacing:0.02em;
 }
 .ov-pt.none{color:var(--muted);opacity:0.4}
-/* COMPACT PILL */
+
 .ov-pill{
   flex:1;height:30px;border-radius:8px;
   background:var(--panel2-solid);border:1px solid var(--line);
   color:var(--ink);display:flex;align-items:center;
   padding:0 9px;font:700 0.75rem var(--display);
-  overflow:hidden;min-width:0;max-width:100%;
-  gap:6px;
+  overflow:hidden;min-width:0;
+  gap:6px;max-width:340px;
 }
 .ov-pill .song-info{display:flex;align-items:center;gap:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;min-width:0}
 .ov-pill .song-info span{overflow:hidden;text-overflow:ellipsis;font-size:0.68rem;font-weight:500;color:var(--muted);font-family:var(--body)}
 .ov-pill .song-info b{font-size:0.72rem;color:var(--ink);font-weight:700;font-family:var(--display)}
 .ov-pill.out{opacity:0.4}
 .ov-pill .flag{width:16px;height:11px;object-fit:cover;border-radius:2px;flex-shrink:0;}
-.ov-place{width:32px;text-align:center;font-weight:800;color:var(--gold);font-size:0.82rem;font-family:var(--display);flex-shrink:0}
 
-/* In final mode, make pills even more compact and give more width to points */
-.ov-compact .ov-pill { max-width: 260px; }
+.ov-place{width:32px;text-align:center;font-weight:800;color:var(--gold);font-size:0.82rem;font-family:var(--display);flex-shrink:0;}
 
 .row.winner{
   border:2px solid var(--gold);
@@ -550,7 +538,7 @@ dialog input,dialog select{width:100%}
   border-color:rgba(255,77,109,0.4);
   border-left-width:3px;
 }
-.row.autofinal-row{border-color:rgba(168,85,247,0.55)}
+.row.autofinal-row{border-color:rgba(59,130,246,0.55)}
 
 /* ── Live Mode ── */
 .live-mode-banner{
@@ -559,15 +547,7 @@ dialog input,dialog select{width:100%}
   box-shadow:var(--shadow-panel);
   display:flex;flex-direction:column;gap:16px;
   border:1px solid var(--line);
-  position:relative;overflow:hidden;
 }
-.live-mode-banner::before{
-  content:"";position:absolute;top:0;left:0;right:0;height:3px;
-  background:linear-gradient(90deg, var(--red), var(--pink), var(--violet));
-  background-size:200% 100%;
-  animation:gradientFlow 4s ease infinite;
-}
-
 .live-header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding-bottom:16px;flex-wrap:wrap;gap:12px}
 .live-header h2{color:#fff;margin:0;font-size:1.3rem;display:flex;align-items:center;gap:12px}
 .live-dot{
@@ -690,41 +670,6 @@ dialog input,dialog select{width:100%}
 .battle-runner-up .score { font-family: var(--number-font); font-size: 1.5rem; color: var(--cyan); }
 .battle-runner-up .label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; }
 
-.battle-rest {
-  margin-top: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.battle-rest-row {
-  display: grid;
-  grid-template-columns: 40px 1fr auto;
-  gap: 14px;
-  align-items: center;
-  padding: 12px 16px;
-  background: var(--panel2-solid);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-}
-.battle-rest-place {
-  font-family: var(--display);
-  font-weight: 800;
-  color: var(--muted);
-  font-size: 1rem;
-  text-align: center;
-}
-.battle-rest-name {
-  font-family: var(--display);
-  font-weight: 700;
-  color: var(--ink);
-}
-.battle-rest-score {
-  font-family: var(--number-font);
-  color: var(--cyan);
-  font-size: 1.4rem;
-  letter-spacing: 0.02em;
-}
-
 .hidden-pred {
   color: var(--muted-dim);
   font-family: var(--number-font);
@@ -733,76 +678,51 @@ dialog input,dialog select{width:100%}
   font-size: 1.1rem;
 }
 
-/* ── Scoreboard (redesigned) ── */
-.sb-cards {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 8px;
+/* ── Scoreboard (Table) ── */
+.sb-table {
+  width: 100%;
+  border-collapse: collapse;
 }
-.sb-card {
-  display: grid;
-  grid-template-columns: 56px 1fr auto auto;
-  gap: 16px;
-  align-items: center;
-  padding: 14px 18px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+.sb-table th, .sb-table td {
+  padding: 12px 10px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
 }
-.sb-card:hover { border-color: var(--line-strong); box-shadow: 0 6px 16px rgba(0,0,0,0.3); }
-.sb-card.sb-rank-1 { border: 2px solid var(--gold); background: linear-gradient(135deg, rgba(255,209,102,0.08) 0%, var(--panel-solid) 60%); box-shadow: 0 0 20px rgba(255,209,102,0.2); }
-.sb-card.sb-rank-2 { border-color: #c0c0c0; }
-.sb-card.sb-rank-3 { border-color: #cd7f32; }
-
-.sb-rank {
-  font-family: var(--number-font);
-  font-size: 1.8rem;
-  text-align: center;
+.sb-table th {
+  text-align: left;
+  font-family: var(--display);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   color: var(--muted);
-  letter-spacing: 0.02em;
-  line-height: 1;
 }
-.sb-card.sb-rank-1 .sb-rank { color: var(--gold); }
-.sb-card.sb-rank-2 .sb-rank { color: #e5e5e5; }
-.sb-card.sb-rank-3 .sb-rank { color: #d97706; }
+.sb-table td.sb-rank-cell {
+  font-family: var(--number-font);
+  font-size: 1.6rem;
+  color: var(--muted);
+  text-align: center;
+  width: 60px;
+}
+.sb-table tr.sb-top1 td.sb-rank-cell { color: var(--gold); text-shadow: 0 0 12px rgba(255,209,102,0.5); }
+.sb-table tr.sb-top2 td.sb-rank-cell { color: #e5e5e5; }
+.sb-table tr.sb-top3 td.sb-rank-cell { color: #cd7f32; }
 
-.sb-main { display: flex; align-items: center; gap: 14px; min-width: 0; }
-.sb-flag { flex-shrink: 0; }
-.sb-flag .flag { width: 36px; height: 24px; border-radius: 4px; }
-.sb-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.sb-title { font-family: var(--display); font-weight: 800; font-size: 1.02rem; color: var(--ink); letter-spacing: -0.01em; }
+.sb-song-cell {
+  display: flex; align-items: center; gap: 12px;
+}
+.sb-song-cell .flag { width: 32px; height: 22px; border-radius: 4px; }
+.sb-song-info { display: flex; flex-direction: column; gap: 2px; }
+.sb-title { font-family: var(--display); font-weight: 800; font-size: 1.05rem; color: var(--ink); }
 .sb-artist { font-size: 0.8rem; color: var(--muted); font-weight: 500; }
 .sb-country { font-size: 0.7rem; color: var(--muted-dim); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
 
-.sb-jury-scores { display: flex; gap: 5px; flex-wrap: wrap; justify-content: flex-end; }
-.sb-chip {
-  min-width: 32px; height: 32px; padding: 0 8px;
-  display: flex; align-items: center; justify-content: center;
-  border-radius: 8px; font-family: var(--number-font); font-size: 1.05rem;
-  letter-spacing: 0.02em;
+.sb-score-cell { text-align: center; width: 60px; }
+.sb-score-cell b {
+  font-family: var(--number-font);
+  font-size: 1.8rem;
+  color: var(--cyan);
 }
-
-.sb-avg {
-  display: flex; flex-direction: column; align-items: center; gap: 2px;
-  min-width: 60px;
-}
-.sb-avg b {
-  font-family: var(--number-font); font-size: 1.6rem;
-  color: var(--cyan); letter-spacing: 0.02em;
-}
-.sb-card.sb-rank-1 .sb-avg b {
-  background: linear-gradient(135deg, #ffd166 0%, #ffae00 100%);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-}
-.sb-avg small { font-size: 0.58rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; }
-
-@media (max-width: 900px) {
-  .sb-card { grid-template-columns: 40px 1fr; gap: 10px; row-gap: 10px; }
-  .sb-jury-scores { grid-column: 1 / -1; justify-content: flex-start; }
-  .sb-avg { grid-column: 1 / -1; flex-direction: row; gap: 8px; }
-}
+.sb-table tr.sb-top1 .sb-score-cell b { color: var(--gold); }
 
 /* ── Toast ── */
 #toast-container{
@@ -1461,7 +1381,9 @@ function overviewTab(){
       pts += '</div>';
       var out = e.dq; var pl = e.place ? '<span class="ov-place">'+e.place+'.</span>' : '<span class="ov-place">–</span>';
       var pill = s ? '<span class="ov-pill'+(out?" out":"")+'"><div class="song-info">'+flag(s.cc)+'<span><b>'+esc(s.title)+'</b></span></div></span>' : '<span class="ov-pill out"><div class="song-info"><span>–</span></div></span>';
-      rowsOv += '<div class="ov-row-item ov-compact">'+pts+pill+pl+'</div>';
+      
+      // Layout: Points + Pill (centered) and Place (right)
+      rowsOv += '<div class="ov-row-item">' + pts + pill + '<div style="flex-grow:1"></div>' + pl + '</div>';
     }
     return '<h2>Overview</h2><p class="hint">Everyone\'s points side by side. Disqualified or non-qualifying countries are greyed out.</p>' +
       subTabsHtml + '<div class="card" style="margin-top:18px"><h3 style="text-align:center;margin-bottom:14px;font-size:1.1rem">Grand Final</h3>' + getPtsHeader(false) + '<div style="display:flex;flex-direction:column;gap:5px">'+rowsOv+'</div></div>';
@@ -1476,7 +1398,12 @@ function overviewTab(){
       pts += '</div>';
       var out = (e.place && e.place>10) || e.dq; var pl = e.place ? '<span class="ov-place">'+e.place+'.</span>' : '<span class="ov-place">–</span>';
       var pill = s ? '<span class="ov-pill'+(out?" out":"")+'"><div class="song-info">'+flag(s.cc)+'<span><b>'+esc(s.title)+'</b></span></div></span>' : '<span class="ov-pill out"><div class="song-info"><span>–</span></div></span>';
-      if(isMirror){ rows += '<div class="ov-row-item">'+pl+pill+pts+'</div>'; } else { rows += '<div class="ov-row-item">'+pts+pill+pl+'</div>'; }
+      
+      if(isMirror){ 
+        rows += '<div class="ov-row-item"><div style="flex-grow:1"></div>'+pl+pill+pts+'</div>'; 
+      } else { 
+        rows += '<div class="ov-row-item">'+pts+pill+'<div style="flex-grow:1"></div>'+pl+'</div>'; 
+      }
     }
     return '<div class="ov-column"><div class="ov-col-title">'+title+'</div>'+getPtsHeader(isMirror)+'<div style="display:flex;flex-direction:column;gap:6px">'+rows+'</div></div>';
   };
@@ -1542,7 +1469,7 @@ function showView(sh){
       var glowStyle = (st.totalGuessed > 0 && st.correct === st.totalGuessed) ? 'color:var(--gold);' : 'color:var(--muted);';
       nqExtra = ' <span style="font-size:0.7rem;font-weight:700;border-left:1px solid var(--line);padding-left:8px;'+glowStyle+'">' + st.correct + ' / ' + st.totalGuessed + ' NQs</span>';
     }
-    juryBubblesHtml += '<div style="background:var(--panel2-solid);border:1px solid var(--line);padding:7px 14px;border-radius:999px;font-size:0.83rem;font-weight:700;display:inline-flex;align-items:center;gap:8px;"><span style="color:var(--ink)">'+esc(S.jury[j].name)+'</span><span style="'+ptsCol+'">'+ptsText+'</span>'+nqExtra+'</div>';
+    juryBubblesHtml += '<div style="background:var(--panel2-solid);border:1px solid var(--line);padding:7px 14px;border-radius:999px;font-size:0.83rem;font-weight:700;display:inline-flex;align-items:center;gap:8px;"><span style="color:var(--ink)">'+esc(S.jury[j].name)+'</span><span style="'+ptsCol+'">'+ptsText+'</span>'+nqeExtra+'</div>';
   }
   juryBubblesHtml += '</div>';
 
@@ -1729,17 +1656,18 @@ function battle(){
       
       if (showHidden) {
         guessCells += '<td class="c"><span class="hidden-pred">•••</span></td>';
-        diffCells += '<td class="c"><span class="hidden-pred">•••</span></td>';
       } else {
         var valStr = (v !== undefined && v !== null) ? v : "", isDup = v && dupSets[jId][v] > 1;
         guessCells += '<td class="c"><input type="number" min="1" max="'+fin.length+'" value="'+valStr+'" class="'+(isDup?"dup":"")+'" data-chg="pred" data-e="'+e.id+'" data-j="'+jId+'" '+(isOwn?'':'readonly')+' style="width:60px;text-align:center"></td>';
-        var diffCell = "–";
-        if(v !== undefined && v !== null && act !== undefined && act !== null){
-          var d = Math.abs(v - act); jurorTotals[jId].sum += d; jurorTotals[jId].count++;
-          if(d === 0){ diffCell = '<span class="cell" style="'+pc(10)+';font-size:0.85rem;padding:4px 9px;">🎯 0</span>'; } else { diffCell = '<span class="cell" style="'+pc(Math.max(1, 10 - d))+';font-size:0.85rem;padding:4px 9px;">'+d+'</span>'; }
-        }
-        diffCells += '<td class="c">'+diffCell+'</td>';
       }
+
+      // ALWAYS SHOW DIFF (even if hidden)
+      var diffCell = "–";
+      if(v !== undefined && v !== null && act !== undefined && act !== null){
+        var d = Math.abs(v - act); jurorTotals[jId].sum += d; jurorTotals[jId].count++;
+        if(d === 0){ diffCell = '<span class="cell" style="'+pc(10)+';font-size:0.85rem;padding:4px 9px;">🎯 0</span>'; } else { diffCell = '<span class="cell" style="'+pc(Math.max(1, 10 - d))+';font-size:0.85rem;padding:4px 9px;">'+d+'</span>'; }
+      }
+      diffCells += '<td class="c">'+diffCell+'</td>';
     }
     var placeActStr = (act!==undefined&&act!==null)?act:"–";
     rows+='<tr><td>'+flag(s.cc)+' '+esc(CN[s.cc]||s.cc)+'</td>'+guessCells+diffCells+'<td class="c"><b>'+placeActStr+'</b></td></tr>';
@@ -1823,42 +1751,42 @@ function scoreboard(){
   }
   rows.sort(function(a,b){ return ((b.avg!==null?b.avg:-1)-(a.avg!==null?a.avg:-1)); });
   
-  var sbCards = '';
+  var sbRows = '';
   for(var i=0; i<rows.length; i++){
     var x = rows[i];
     var rank = i + 1;
-    var rankClass = rank <= 3 ? ' sb-rank-' + rank : '';
+    var rankClass = rank === 1 ? ' sb-top1' : (rank === 2 ? ' sb-top2' : (rank === 3 ? ' sb-top3' : ''));
     
     var chips = '';
     for(var j=0; j<S.jury.length; j++){
       var p = x.r[S.jury[j].id];
       if (p) {
-        chips += '<span class="sb-chip" style="'+pc(p)+'">'+p+'</span>';
+        chips += '<span class="cell" style="'+pc(p)+'; display:inline-block; margin: 0 2px;">'+p+'</span>';
       } else {
-        chips += '<span class="sb-chip" style="background:var(--panel-solid);color:var(--muted-dim);">–</span>';
+        chips += '<span class="cell" style="background:var(--panel2-solid);color:var(--muted-dim); display:inline-block; margin: 0 2px;">–</span>';
       }
     }
     
-    sbCards += '<div class="sb-card'+rankClass+'">' +
-      '<div class="sb-rank">'+rank+'</div>' +
-      '<div class="sb-main">' +
-        '<div class="sb-flag">'+flag(x.s.cc)+'</div>' +
-        '<div class="sb-info">' +
-          '<div class="sb-title">'+esc(x.s.title)+'</div>' +
-          '<div class="sb-artist">'+esc(x.s.artist)+'</div>' +
-          '<div class="sb-country">'+esc(CN[x.s.cc]||x.s.cc.toUpperCase())+'</div>' +
+    sbRows += '<tr class="'+rankClass+'">' +
+      '<td class="sb-rank-cell">'+rank+'</td>' +
+      '<td>' +
+        '<div class="sb-song-cell">' +
+          flag(x.s.cc) +
+          '<div class="sb-song-info">' +
+            '<div class="sb-title">'+esc(x.s.title)+'</div>' +
+            '<div class="sb-artist">'+esc(x.s.artist)+'</div>' +
+            '<div class="sb-country">'+esc(CN[x.s.cc]||x.s.cc.toUpperCase())+'</div>' +
+          '</div>' +
         '</div>' +
-      '</div>' +
-      '<div class="sb-jury-scores">' + chips + '</div>' +
-      '<div class="sb-avg">' +
-        '<b>'+(x.avg==null?"–":x.avg.toFixed(1))+'</b>' +
-        '<small>Ø</small>' +
-      '</div>' +
-    '</div>';
+      '</td>' +
+      '<td style="text-align:center;">' + chips + '</td>' +
+      '<td class="sb-score-cell"><b>'+(x.avg==null?"–":x.sum)+'</b></td>' +
+      '<td class="sb-score-cell"><b>'+(x.avg==null?"–":x.avg.toFixed(1))+'</b></td>' +
+    '</tr>';
   }
   
   return '<h2>Scoreboard</h2><p class="hint">Average points, highest first.</p>'+switcher("sbShow")+
-  (rows.length?'<div class="sb-cards">'+sbCards+'</div>':'<p class="empty">Nothing to show yet.</p>');
+  (rows.length?'<div class="tw"><table class="sb-table"><thead><tr><th class="c">#</th><th>Song</th><th class="c">Jury</th><th class="c">Total</th><th class="c">Ø</th></tr></thead><tbody>'+sbRows+'</tbody></table></div>':'<p class="empty">Nothing to show yet.</p>');
 }
 
 function compareView(){
@@ -2349,7 +2277,6 @@ render = function() {
 
 render();
 checkFirstJoin();
-// FASTER SYNC: 1.2s polling instead of 4s
 if(DB){pull(true);setInterval(pull,1200);}
 </script>
 </body>
