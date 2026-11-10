@@ -555,16 +555,19 @@ dialog input,dialog select{width:100%}
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
 }
 
-.row.out{
-  opacity:0.42;filter:grayscale(0.85);
-  background:rgba(10,6,24,0.5);
-  border-color:rgba(50,25,95,0.5);
+.row.out {
+  background: rgba(10,6,24,0.5);
+  border-color: rgba(50,25,95,0.5);
 }
-/* NEU: Die Kacheln in ausgegrauten Zeilen bleiben voll sichtbar */
+/* Graustufen und Transparenz NUR auf die Texte/Inhalte anwenden, nicht auf die Tiles */
+.row.out > *:not(.stats) {
+  opacity: 0.42;
+  filter: grayscale(0.85);
+}
+/* Die Kacheln bleiben komplett farbig und voll sichtbar */
 .row.out .stats { 
   opacity: 1 !important; 
   filter: none !important; 
-  transform: scale(1.05); /* Etwas größer, damit sie sich abheben */
 }
 .row.dq{
   opacity:0.3;filter:grayscale(1);
