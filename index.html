@@ -92,8 +92,8 @@ body{
 .flash-update { animation: flashUpdate 1.4s ease-out; }
 
 @keyframes goldGlowPulse {
-  0%, 100% { box-shadow:0 0 18px rgba(255,209,102,0.9), 0 0 36px rgba(255,209,102,0.5), inset 0 0 14px rgba(255,255,255,0.6); }
-  50%      { box-shadow:0 0 26px rgba(255,230,150,1), 0 0 52px rgba(255,209,102,0.8), inset 0 0 20px rgba(255,255,255,0.85); }
+  0%, 100% { box-shadow:0 0 12px rgba(255,209,102,0.55), inset 0 1px 0 rgba(255,255,255,0.7), inset 0 -2px 4px rgba(180,120,0,0.25); }
+  50%      { box-shadow:0 0 18px rgba(255,220,120,0.75), inset 0 1px 0 rgba(255,255,255,0.8), inset 0 -2px 4px rgba(180,120,0,0.3); }
 }
 
 /* NEU: Schatten & Farb-Fade für die normalen Kacheln (1-9) wie im Live Mode */
@@ -1246,6 +1246,19 @@ function push(){
   }
 }
 
+// NEU: Gezieltes Schreiben einzelner Blätter (spart Download für alle Clients)
+// Wird z.B. beim Bewerten genutzt, statt den kompletten ratings-Baum neu zu pushen.
+function pushLeaf(path, value){
+  if(!DB) return;
+  if(value === null || value === undefined){
+    if(dbRef){ dbRef.child(path).remove().catch(function(){}); }
+    delete lastFlat[path];
+  } else {
+    if(dbRef){ dbRef.child(path).set(value).catch(function(){}); }
+    lastFlat[path] = value;
+  }
+}
+
 function pull(first){
   if(!DB)return;
   
@@ -1268,53 +1281,109 @@ function pull(first){
         net="error";
       });
       
-      // WICHTIG: Nur auf die Pfade hören, die sich tatsächlich ändern.
-      // Root-Listener ("value" auf alles) feuert bei jeder Kleinigkeit
-      // und kann bei vielen Usern teuer werden.
-      var watchedPaths = ["ratings", "pred", "qualPred", "liveState", "battleHidden"];
-      watchedPaths.forEach(function(path){
-        dbRef.child(path).on("value", function(snapshot){
+      // WICHTIG: Nicht auf ganze Teilbäume hören, sondern auf einzelne Blätter.
+      // "child_changed" auf einem Knoten liefert nur das geänderte Kind –
+      // das spart massiv Download-Bandbreite.
+      var watchedTrees = ["ratings", "pred", "qualPred"];
+      watchedTrees.forEach(function(path){
+        // Wenn ein Wert hinzukommt oder sich ändert
+        dbRef.child(path).on("child_added", function(snap){
           net = "online";
-          var a = document.activeElement;
-var isTyping = a && /INPUT|SELECT|TEXTAREA/.test(a.tagName);
-// Wenn der User gerade tippt, verzögert aktualisieren (aber nicht verlieren!)
-if(dlg.open || isTyping){
-  setTimeout(function(){ 
-    if(!dlg.open && !isTyping) { render(); }
-  }, 1500);
-  return;
-}
-          
-          var t = {};
-          t[path] = snapshot.val();
-          
-          // Nur den betroffenen Teilbaum aktualisieren
-          if(path === "ratings") S.ratings = t[path] || {};
-          else if(path === "pred") S.pred = t[path] || {};
-          else if(path === "qualPred") S.qualPred = t[path] || {};
-          else if(path === "liveState") S.liveState = t[path] || {};
-          else if(path === "battleHidden") S.battleHidden = !!t[path];
-          
-          // Flash-Animation für geänderte Werte
-          var changedKeys = [];
-          var newFlat = flat(t);
-          for(var k in newFlat){ if(newFlat[k] !== lastFlat[k]) changedKeys.push(k); }
-          for(var k in lastFlat){ if(k.startsWith(path + "/") && !(k in newFlat)) changedKeys.push(k); }
-          
-          for(var k in newFlat) lastFlat[k] = newFlat[k];
-          for(var k in lastFlat){ if(k.startsWith(path + "/") && !(k in newFlat)) delete lastFlat[k]; }
-          
-          try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){}
-          render();
-          
-          if(changedKeys.length > 0) applyFlashChanges(changedKeys);
+          handleLeafChange(path, snap, false);
+        });
+        dbRef.child(path).on("child_changed", function(snap){
+          net = "online";
+          handleLeafChange(path, snap, false);
+        });
+        dbRef.child(path).on("child_removed", function(snap){
+          net = "online";
+          handleLeafChange(path, snap, true);
         }, function(error){
           console.warn("Firebase listen error for " + path + ":", error);
           net = "error";
         });
       });
+
+      // liveState & battleHidden sind klein – dort ist ein value-Listener okay
+      dbRef.child("liveState").on("value", function(snap){
+        net = "online";
+        S.liveState = snap.val() || {};
+        try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){}
+        scheduleRender();
+      });
+      dbRef.child("battleHidden").on("value", function(snap){
+        net = "online";
+        S.battleHidden = !!snap.val();
+        try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){}
+        scheduleRender();
+      });
     });
   }
+}
+
+// NEU: Verarbeitet einzelne Blatt-Änderungen aus Firebase
+// (child_added / child_changed / child_removed liefern nur das geänderte Blatt)
+function handleLeafChange(path, snap, removed){
+  var key = snap.key;
+  var val = removed ? null : snap.val();
+
+  // Ziel-Objekt bestimmen (S.ratings, S.pred oder S.qualPred)
+  var target = (path === "ratings") ? S.ratings
+             : (path === "pred")    ? S.pred
+             : (path === "qualPred")? S.qualPred
+             : null;
+  if(!target) return;
+
+  // Snap kann auf Ebene songId ODER auf Ebene songId/juryId liegen –
+  // je nachdem, ob ein ganzer Song-Knoten oder nur ein Juror-Wert geändert wurde.
+  var flatDelta = flat((function(){ var o = {}; o[key] = val; return o; })());
+
+  // In S.* einpflegen
+  if(val === null || val === undefined){
+    delete target[key];
+  } else if(typeof val === "object"){
+    target[key] = Object.assign({}, target[key] || {}, val);
+  } else {
+    target[key] = val;
+  }
+
+  // Flash-Keys sammeln
+  var changedKeys = [];
+  for(var k in flatDelta){
+    var fullKey = path + "/" + k;
+    if(flatDelta[k] !== lastFlat[fullKey]) changedKeys.push(fullKey);
+    lastFlat[fullKey] = flatDelta[k];
+  }
+  if(removed){
+    // Beim Entfernen: alles unterhalb des Keys aus lastFlat löschen
+    var prefix = path + "/" + key;
+    for(var fk in lastFlat){
+      if(fk === prefix || fk.indexOf(prefix + "/") === 0){
+        changedKeys.push(fk);
+        delete lastFlat[fk];
+      }
+    }
+  }
+
+  try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){}
+  scheduleRender();
+
+  if(changedKeys.length > 0) applyFlashChanges(changedKeys);
+}
+
+// NEU: Render zusammenfassen, damit nicht bei jedem einzelnen Delta
+// sofort neu gerendert wird (batching)
+var _renderScheduled = false;
+function scheduleRender(){
+  if(_renderScheduled) return;
+  _renderScheduled = true;
+  var a = document.activeElement;
+  var isTyping = a && /INPUT|SELECT|TEXTAREA/.test(a.tagName);
+  var delay = (dlg.open || isTyping) ? 800 : 60;
+  setTimeout(function(){
+    _renderScheduled = false;
+    if(!dlg.open && !isTyping) render();
+  }, delay);
 }
 
 function applyFlashChanges(changedKeys){
@@ -1375,12 +1444,13 @@ var pc=function(p){
     6: "#d7eedd", 7: "#aeddbb", 8: "#86cb98", 9: "#5dba76"
   };
   
-  // Die 10: goldenes Glow-Revamp
+  // Die 10: dezenter Gold-Verlauf, dunkle Schrift, sanfter Glow
   if(Number(p) === 10){
-    return "background:radial-gradient(circle at 30% 30%, #fff6cc 0%, #ffd166 35%, #ffae00 100%);" +
-      "color:#ffffff;text-shadow:0 0 10px rgba(255,255,255,1), 0 0 22px rgba(255,230,150,1), 0 0 40px rgba(255,209,102,0.9);" +
-      "border:2.5px solid #fff6cc;box-shadow:0 0 18px rgba(255,209,102,0.9), 0 0 36px rgba(255,209,102,0.5), inset 0 0 14px rgba(255,255,255,0.6);" +
-      "animation:goldGlowPulse 2s ease-in-out infinite;";
+    return "background:linear-gradient(160deg, #ffe9a8 0%, #ffd166 55%, #f5b93a 100%);" +
+      "color:#5a3d00;text-shadow:0 1px 0 rgba(255,255,255,0.6), 0 0 6px rgba(255,230,150,0.5);" +
+      "border:2.5px solid #fff1c2;" +
+      "box-shadow:0 0 12px rgba(255,209,102,0.55), inset 0 1px 0 rgba(255,255,255,0.7), inset 0 -2px 4px rgba(180,120,0,0.25);" +
+      "animation:goldGlowPulse 2.6s ease-in-out infinite;";
   }
   
   var bg = colors[p] || "#ffffff";
@@ -2381,12 +2451,15 @@ function saveRatingAndClose() {
     var e = findEntry(_modalTempEntryId);
     var key = (e && e.songId) ? e.songId : _modalTempEntryId;
     S.ratings[key] = S.ratings[key] || {};
+    var path = "ratings/" + key + "/" + _modalTempJurId;
     if (_modalTempRating === null) {
       delete S.ratings[key][_modalTempJurId];
+      pushLeaf(path, null);           // nur dieses eine Blatt löschen
     } else {
       S.ratings[key][_modalTempJurId] = _modalTempRating;
+      pushLeaf(path, _modalTempRating); // nur dieses eine Blatt schreiben
     }
-    save();
+    try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){}
   }
   _modalTempRating = null;
   _modalTempEntryId = null;
