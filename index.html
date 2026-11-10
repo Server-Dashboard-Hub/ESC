@@ -337,32 +337,40 @@ h3{font-family:var(--display);margin:0 0 12px;font-weight:700;letter-spacing:-0.
   align-items: center;
   justify-content: center; /* Zentriert die Zahl exakt */
 }
-/* Kleiner Buchstabe unten rechts in der Ecke */
+/* Buchstabe unten links, fett */
 .tile-bg-letter {
   position: absolute;
   bottom: 2px;
-  right: 4px;
+  left: 5px;
   font-family: var(--body);
-  font-weight: 800;
-  font-size: 0.6rem;
-  opacity: 0.55;
+  font-weight: 900; /* Fett */
+  font-size: 0.65rem;
+  opacity: 0.85;
   pointer-events: none;
   line-height: 1;
   letter-spacing: 0;
   user-select: none;
-  color: #1d1d1d; /* Immer schwarz, da Kacheln jetzt hell sind */
+  color: #1d1d1d;
 }
+/* Zahl bleibt exakt mittig */
 .tile-value {
-  position: relative;
-  z-index: 2;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   font-family: var(--number-font);
   font-size: 1.5rem;
   font-weight: 400;
   letter-spacing: 0.02em;
   line-height: 1;
   margin: 0;
-  /* Etwas nach oben/unten schieben, damit die Zahl zentriert wirkt */
-  padding-bottom: 6px;
+}
+/* NQ-Spezifisch: nutzt die Display-Schrift (wie Song-Titel) */
+.tile.nq-tip-tile .tile-value {
+  font-family: var(--display);
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
 }
 .tile.empty{background:var(--panel2-solid);color:var(--muted)}
 
@@ -1810,8 +1818,7 @@ function showView(sh){
           
           var clickAttr = isMe ? 'data-act="toggleQual" data-e="'+e.id+'" data-jur="'+jur.id+'"' : '';
           var curStyle = isMe ? 'cursor:pointer;' : 'cursor:default;pointer-events:none;';
-          tipsHtml += '<button class="tile '+(isMe?"me":"empty")+extraClass+'" style="background:'+bg+';color:'+col+';border:'+border+';'+curStyle+'" '+clickAttr+' title="'+esc(jur.name)+'"><div class="tile-bg-letter" style="color:'+col+'">'+esc(lab[j])+'</div><div class="tile-value">'+txt+'</div></button>';
-        }
+          tipsHtml += '<button class="tile nq-tip-tile '+(isMe?"me":"empty")+extraClass+'" style="background:'+bg+';color:'+col+';border:'+border+';'+curStyle+'" '+clickAttr+' title="'+esc(jur.name)+'"><div class="tile-bg-letter">'+esc(lab[j])+'</div><div class="tile-value">'+txt+'</div></button>';        }
         mainStatsHtml = '<div class="tiles">'+tipsHtml+'</div>';
       }
     } else {
@@ -1823,18 +1830,26 @@ function showView(sh){
       var isAdmin = (me === "admin");
       for(var j=0; j<S.jury.length; j++){
         var jur = S.jury[j], v = r[jur.id];
-        // Admin kann ALLE ändern. Normale User nur ihr eigenes Profil.
         var canEdit = isAdmin || (jur.id === me);
         var cls = "tile" + (canEdit?" me":"") + (v!==undefined&&v!==null?"":" empty") + (canEdit?"":" readonly");
         
-        // HIER ist der neue Aufbau mit Hintergrund-Buchstabe und Vordergrund-Zahl
+        // NEU: Auto-Qualifier bekommen blauen Hintergrund (auch wenn noch keine Punkte)
+        var tileStyle = v ? pc(v) : '';
+        if (isAutoFinal) {
+          if (!v) {
+            tileStyle = "background:linear-gradient(135deg, #3b82f6, #2563eb); color:#fff; border:2.5px solid #60a5fa;";
+          } else {
+            tileStyle = pc(v) + "; border:2.5px solid #60a5fa; box-shadow:0 0 8px rgba(59,130,246,0.4);";
+          }
+        }
+        
         var inner = '<div class="tile-bg-letter">'+esc(lab[j])+'</div><div class="tile-value">'+((v!==undefined&&v!==null)?v:"–")+'</div>';
         
         var flashKey = e.songId ? 'rating_'+e.songId+'_'+jur.id : '';
         var flashAttr = flashKey ? 'data-flash-key="'+flashKey+'"' : '';
         
-        if(s && canEdit){ tiles += '<button class="'+cls+'" '+flashAttr+' style="'+(v?pc(v):"")+'" data-act="openPick" data-e="'+e.id+'" data-jur="'+jur.id+'" title="'+esc(jur.name)+'">'+inner+'</button>'; }
-        else { tiles += '<div class="'+cls+'" '+flashAttr+' style="'+(v?pc(v):"")+'" title="'+esc(jur.name)+'">'+inner+'</div>'; }
+        if(s && canEdit){ tiles += '<button class="'+cls+'" '+flashAttr+' style="'+tileStyle+'" data-act="openPick" data-e="'+e.id+'" data-jur="'+jur.id+'" title="'+esc(jur.name)+'">'+inner+'</button>'; }
+        else { tiles += '<div class="'+cls+'" '+flashAttr+' style="'+tileStyle+'" title="'+esc(jur.name)+'">'+inner+'</div>'; }
       }
       mainStatsHtml = '<div class="tiles">'+tiles+'</div><div class="avg"><b>'+(avg==null?"–":avg.toFixed(1))+'</b><small>AVG</small></div>';
     }
