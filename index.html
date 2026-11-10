@@ -79,6 +79,15 @@ body{
   100% { background-position: 200% center; }
 }
 
+/* NEU: Die geile Animation für den Live-Modus (Rahmen & Glow) */
+@keyframes liveBoxFlash {
+  0% { border-color: var(--gold); box-shadow: 0 0 0 0 rgba(255,209,102,0.8), inset 0 0 20px rgba(255,209,102,0.4); transform: scale(1); }
+  30% { border-color: #fff6cc; box-shadow: 0 0 32px 10px rgba(255,209,102,1), inset 0 0 30px rgba(255,209,102,0.6); transform: scale(1.06); }
+  60% { border-color: var(--gold); box-shadow: 0 0 20px 4px rgba(255,209,102,0.6), inset 0 0 15px rgba(255,209,102,0.3); transform: scale(1.02); }
+  100% { border-color: rgba(255,255,255,0.15); box-shadow: 0 4px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1); transform: scale(1); }
+}
+.live-box-flash { animation: liveBoxFlash 1.4s ease-out; }
+
 .flash-update { animation: flashUpdate 1.4s ease-out; }
 
 .wrap{max-width:1600px;margin:0 auto;padding:0 20px 100px}
@@ -1183,7 +1192,6 @@ function pull(first){
 }
 
 function applyFlashChanges(changedKeys){
-  // For each changed rating/pred key, find the corresponding DOM element and flash it
   var targetKeys = {};
   for(var i=0; i<changedKeys.length; i++){
     var k = changedKeys[i];
@@ -1192,17 +1200,25 @@ function applyFlashChanges(changedKeys){
     if(match){ targetKeys['rating_' + match[1] + '_' + match[2]] = true; }
     var match2 = k.match(/^pred\/([^\/]+)\/([^\/]+)$/);
     if(match2){ targetKeys['pred_' + match2[1] + '_' + match2[2]] = true; }
-    var match3 = k.match(/^liveState\/([^\/]+)\//);
-    if(match3){ targetKeys['live_' + match3[1]] = true; }
   }
   
-  // Flash all tiles with data-flash-key
+  // Flash die normalen Kacheln (falls man nicht im Live-Modus ist)
   var tiles = document.querySelectorAll('[data-flash-key]');
   for(var i=0; i<tiles.length; i++){
     var key = tiles[i].getAttribute('data-flash-key');
     if(targetKeys[key]){
       tiles[i].classList.add('flash-update');
       (function(el){ setTimeout(function(){ el.classList.remove('flash-update'); }, 1400); })(tiles[i]);
+    }
+  }
+  
+  // NEU: Flash die Live-Modus Kacheln
+  var liveBoxes = document.querySelectorAll('[data-live-flash-key]');
+  for(var i=0; i<liveBoxes.length; i++){
+    var key = liveBoxes[i].getAttribute('data-live-flash-key');
+    if(targetKeys[key]){
+      liveBoxes[i].classList.add('live-box-flash');
+      (function(el){ setTimeout(function(){ el.classList.remove('live-box-flash'); }, 1400); })(liveBoxes[i]);
     }
   }
 }
@@ -1468,6 +1484,7 @@ function liveModeView(sh){
     var clickAttr = isMe ? 'data-act="openPick" data-e="'+currentEntry.id+'" data-jur="'+jur.id+'" title="Punkte ändern"' : '';
     var editableClass = isMe ? ' editable' : '';
     
+    // Der Key muss exakt so heißen wie in applyFlashChanges
     var flashKey = currentEntry.songId ? 'rating_'+currentEntry.songId+'_'+jur.id : '';
     var flashAttr = flashKey ? 'data-live-flash-key="'+flashKey+'"' : '';
     
