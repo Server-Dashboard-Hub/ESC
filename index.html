@@ -1838,7 +1838,9 @@ function showView(sh){
           
           var clickAttr = isMe ? 'data-act="toggleQual" data-e="'+e.id+'" data-jur="'+jur.id+'"' : '';
           var curStyle = isMe ? 'cursor:pointer;' : 'cursor:default;pointer-events:none;';
-          tipsHtml += '<button class="tile nq-tip-tile '+(isMe?"me":"empty")+extraClass+'" style="background:'+bg+';color:'+col+';border:'+border+';'+curStyle+'" '+clickAttr+' title="'+esc(jur.name)+'"><div class="tile-value">'+txt+'</div></button>';        mainStatsHtml = '<div class="tiles">'+tipsHtml+'</div>';
+          tipsHtml += '<button class="tile nq-tip-tile '+(isMe?"me":"empty")+extraClass+'" style="background:'+bg+';color:'+col+';border:'+border+';'+curStyle+'" '+clickAttr+' title="'+esc(jur.name)+'"><div class="tile-value">'+txt+'</div></button>';
+        }
+        mainStatsHtml = '<div class="tiles">'+tipsHtml+'</div>';
       }
     } else {
       var vals = []; for(var j=0; j<S.jury.length; j++){ if(r[S.jury[j].id]) vals.push(r[S.jury[j].id]); }
