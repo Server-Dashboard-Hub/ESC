@@ -337,27 +337,31 @@ h3{font-family:var(--display);margin:0 0 12px;font-weight:700;letter-spacing:-0.
   align-items: center;
   justify-content: center; /* Zentriert die Zahl exakt */
 }
-/* Buchstabe unten links, super fett */
-.tile-bg-letter {
-  position: absolute;
-  bottom: 2px;
-  left: 5px;
-  font-family: var(--body);
-  font-weight: 900 !important; /* Erzwingt die fetteste Variante */
-  font-size: 0.7rem; /* Etwas größer für bessere Lesbarkeit */
-  opacity: 1; /* Voll sichtbar */
-  pointer-events: none;
-  line-height: 1;
-  letter-spacing: 0;
-  user-select: none;
-  color: #1d1d1d;
+/* Kachel-Grundstil */
+.tile {
+  width: 46px; height: 50px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  border: 2.5px solid #4b5563; /* Grauer Rahmen */
+  padding: 0; line-height: 1; font-family: inherit;
+  overflow: hidden; cursor: pointer;
+  transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+  flex-shrink: 0; position: relative;
 }
+
+/* NEU: Der Buchstabe oben drüber */
+.tile-header-letter {
+  width: 46px;
+  text-align: center;
+  font-family: var(--body);
+  font-weight: 900;
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-bottom: 4px;
+  letter-spacing: 0.05em;
+}
+
 /* Zahl bleibt exakt mittig */
 .tile-value {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
   font-family: var(--number-font);
   font-size: 1.5rem;
   font-weight: 400;
@@ -568,22 +572,26 @@ dialog input,dialog select{width:100%}
 }
 
 .row.out {
-  background: rgba(10,6,24,0.5);
-  border-color: rgba(50,25,95,0.5);
+  background: rgba(10,6,24,0.7); /* Etwas dunkler/opaker für besseren Kontrast */
+  border-color: rgba(50,25,95,0.7);
 }
-/* Die Flagge im Hintergrund wird ausgegraut */
 .row.out::before {
   filter: grayscale(1) !important;
-  opacity: 0.2 !important;
+  opacity: 0.3 !important;
 }
-/* Nur Text-Elemente ausgrauen */
+/* Text besser lesbar machen (weniger transparent) */
 .row.out .meta span,
 .row.out .no,
 .row.out .cc-code {
-  opacity: 0.3 !important; 
+  opacity: 0.6 !important; 
 }
 .row.out .row-content {
-  opacity: 0.4; 
+  opacity: 0.6; 
+}
+/* NEU: Die Place-Kachel ausgrauen */
+.row.out .pl {
+  opacity: 0.4 !important;
+  filter: grayscale(1) !important;
 }
 .row.dq{
   opacity:0.3;filter:grayscale(1);
@@ -593,10 +601,11 @@ dialog input,dialog select{width:100%}
 }
 .row.autofinal-row{border-color:rgba(59,130,246,0.55)}
 
-/* NEU: AQ-Zeilen bekommen einen dezent bläulichen Hintergrund */
+/* NEU: AQ-Zeilen bekommen einen deutlich sichtbaren bläulichen Hintergrund */
 .row.aq-row {
-  background: linear-gradient(135deg, rgba(59,130,246,0.12) 0%, rgba(22,13,46,0.92) 70%);
-  border-color: rgba(59,130,246,0.4);
+  background: linear-gradient(135deg, rgba(59,130,246,0.35) 0%, rgba(22,13,46,0.95) 80%) !important;
+  border-color: rgba(59,130,246,0.8) !important;
+  box-shadow: inset 0 0 20px rgba(59,130,246,0.1);
 }
 
 /* ── Live Mode ── */
@@ -1829,8 +1838,7 @@ function showView(sh){
           
           var clickAttr = isMe ? 'data-act="toggleQual" data-e="'+e.id+'" data-jur="'+jur.id+'"' : '';
           var curStyle = isMe ? 'cursor:pointer;' : 'cursor:default;pointer-events:none;';
-          tipsHtml += '<button class="tile nq-tip-tile '+(isMe?"me":"empty")+extraClass+'" style="background:'+bg+';color:'+col+';border:'+border+';'+curStyle+'" '+clickAttr+' title="'+esc(jur.name)+'"><div class="tile-bg-letter">'+esc(lab[j])+'</div><div class="tile-value">'+txt+'</div></button>';        }
-        mainStatsHtml = '<div class="tiles">'+tipsHtml+'</div>';
+          tipsHtml += '<button class="tile nq-tip-tile '+(isMe?"me":"empty")+extraClass+'" style="background:'+bg+';color:'+col+';border:'+border+';'+curStyle+'" '+clickAttr+' title="'+esc(jur.name)+'"><div class="tile-value">'+txt+'</div></button>';        mainStatsHtml = '<div class="tiles">'+tipsHtml+'</div>';
       }
     } else {
       var vals = []; for(var j=0; j<S.jury.length; j++){ if(r[S.jury[j].id]) vals.push(r[S.jury[j].id]); }
@@ -1847,7 +1855,7 @@ function showView(sh){
         // Kacheln bleiben normal gefärbt, auch bei AQ
         var tileStyle = v ? pc(v) : '';
         
-        var inner = '<div class="tile-bg-letter">'+esc(lab[j])+'</div><div class="tile-value">'+((v!==undefined&&v!==null)?v:"–")+'</div>';
+        var inner = '<div class="tile-value">'+((v!==undefined&&v!==null)?v:"–")+'</div>';
         
         var flashKey = e.songId ? 'rating_'+e.songId+'_'+jur.id : '';
         var flashAttr = flashKey ? 'data-flash-key="'+flashKey+'"' : '';
@@ -1894,8 +1902,22 @@ function showView(sh){
       '<div style="display:flex;align-items:center;gap:12px"><div class="stats">'+mainStatsHtml+'</div>'+placeInputHtml+'</div></div>';
   };
 
-  var leftColHtml = ""; for(var i=0; i<leftList.length; i++){ leftColHtml += renderCard(leftList[i]); }
-  var rightColHtml = ""; for(var i=0; i<rightList.length; i++){ rightColHtml += renderCard(rightList[i]); }
+  // NEU: Die Buchstaben-Reihe (L T P K) für die linke Spalte
+  var labHeaderLeft = '<div style="display:flex; justify-content:flex-end; gap:8px; margin-bottom:8px; padding-right:120px;">';
+  for(var j=0; j<S.jury.length; j++){
+    labHeaderLeft += '<div class="tile-header-letter" style="width:46px;">'+esc(lab[j])+'</div>';
+  }
+  labHeaderLeft += '</div>';
+
+  // NEU: Die Buchstaben-Reihe (L T P K) für die rechte Spalte
+  var labHeaderRight = '<div style="display:flex; justify-content:flex-end; gap:8px; margin-bottom:8px; padding-right:120px;">';
+  for(var j=0; j<S.jury.length; j++){
+    labHeaderRight += '<div class="tile-header-letter" style="width:46px;">'+esc(lab[j])+'</div>';
+  }
+  labHeaderRight += '</div>';
+
+  var leftColHtml = labHeaderLeft; for(var i=0; i<leftList.length; i++){ leftColHtml += renderCard(leftList[i]); }
+  var rightColHtml = labHeaderRight; for(var i=0; i<rightList.length; i++){ rightColHtml += renderCard(rightList[i]); }
 
   var editActions = ui.editMode ? '<div class="actions"><button class="ghost" data-act="addSlot" data-show="'+sh+'">＋ Running Order</button><button class="ghost" data-act="delSlot" data-show="'+sh+'">− Remove Last</button></div>' : '';
 
