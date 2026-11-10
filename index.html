@@ -10,6 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&family=Protest+Strike&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 
 <style>
 :root{
@@ -1083,6 +1084,7 @@ function openConfirm(title, text, onYes) {
 
 var DB=(localStorage.getItem("esc-db")||firebaseConfig.databaseURL||"https://esc-connect-7bdfe-default-rtdb.europe-west1.firebasedatabase.app").replace(/\/+$/,"");
 var lastFlat={},busy=0,net=DB?"connecting":"local";
+var dbRef=null;
 
 function sortShowsList(list){
   return list.sort(function(a, b) {
@@ -1166,37 +1168,70 @@ function push(){
   if(!Object.keys(p).length)return;
   var prev=lastFlat;lastFlat=cur;busy++;
 
-  getAuthToken(function(token) {
-    var url = DB + "/.json" + (token ? "?auth=" + encodeURIComponent(token) : "");
-    fetch(url,{method:"PATCH",body:JSON.stringify(p)}).then(function(r){if(!r.ok)throw 0;net="online";}).catch(function(){lastFlat=prev;net="error";}).finally(function(){busy--;});
-  });
+  // WebSocket-basiertes Update über Firebase SDK
+  if(dbRef){
+    dbRef.update(p).then(function(){net="online";}).catch(function(){lastFlat=prev;net="error";}).finally(function(){busy--;});
+  } else {
+    // Fallback, falls dbRef noch nicht initialisiert ist
+    getAuthToken(function(token) {
+      var url = DB + "/.json" + (token ? "?auth=" + encodeURIComponent(token) : "");
+      fetch(url,{method:"PATCH",body:JSON.stringify(p)}).then(function(r){if(!r.ok)throw 0;net="online";}).catch(function(){lastFlat=prev;net="error";}).finally(function(){busy--;});
+    });
+  }
 }
 
 function pull(first){
-  if(!DB||busy)return;
-  getAuthToken(function(token) {
-    var url = DB + "/.json" + (token ? "?auth=" + encodeURIComponent(token) : "");
-    fetch(url).then(function(res){return res.json();}).then(function(t){
-      net="online";
-      if(!t){if(first===true)push();return;}
-      var f=flat(t);
-      if(same(f,lastFlat)) return;
-      var a=document.activeElement;
-      if(first!==true&&(dlg.open||(a&&/INPUT|SELECT|TEXTAREA/.test(a.tagName))))return;
+  if(!DB)return;
+  
+  // Wenn die WebSocket-Referenz noch nicht da ist, initialisieren
+  if(!dbRef){
+    getAuthToken(function(token){
+      // Firebase SDK initialisiert die Referenz (nutzt automatisch WebSocket)
+      dbRef = firebase.database().ref();
       
-      // Detect changed keys for flash animation
-      var changedKeys = [];
-      for(var k in f){ if(f[k] !== lastFlat[k]) changedKeys.push(k); }
+      // Einmaliges Initial-Laden (das ist der einzige große Download!)
+      dbRef.once("value").then(function(snapshot){
+        net="online";
+        var t = snapshot.val();
+        if(!t){ if(first===true) push(); return; }
+        var f = flat(t);
+        S = fromTree(t);
+        lastFlat = f;
+        try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){}
+        render();
+      }).catch(function(err){
+        console.warn("Firebase pull Fehler:", err);
+        net="error";
+      });
       
-      _lastSnapshot = changedKeys;
-      S=fromTree(t);lastFlat=f;
-      try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}
-      render();
-      
-      // Apply flash to changed values
-      if(changedKeys.length > 0) applyFlashChanges(changedKeys);
-    }).catch(function(){net="error";});
-  });
+      // Jetzt auf Echtzeit-Änderungen lauschen (nur Deltas!)
+      dbRef.on("value", function(snapshot){
+        net="online";
+        var t = snapshot.val();
+        if(!t) return;
+        
+        var a = document.activeElement;
+        if(dlg.open || (a && /INPUT|SELECT|TEXTAREA/.test(a.tagName))) return;
+        
+        var f = flat(t);
+        if(same(f, lastFlat)) return;
+        
+        var changedKeys = [];
+        for(var k in f){ if(f[k] !== lastFlat[k]) changedKeys.push(k); }
+        
+        _lastSnapshot = changedKeys;
+        S = fromTree(t);
+        lastFlat = f;
+        try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){}
+        render();
+        
+        if(changedKeys.length > 0) applyFlashChanges(changedKeys);
+      }, function(error){
+        console.warn("Firebase listen error:", error);
+        net = "error";
+      });
+    });
+  }
 }
 
 function applyFlashChanges(changedKeys){
@@ -2576,7 +2611,8 @@ render = function() {
 
 render();
 checkFirstJoin();
-if(DB){pull(true);setInterval(pull,1200);}
+if(DB){pull(true);}
+// KEIN setInterval mehr! Die WebSocket-Verbindung updated in Echtzeit.
 </script>
 </body>
 </html>
