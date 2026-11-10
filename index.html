@@ -337,19 +337,20 @@ h3{font-family:var(--display);margin:0 0 12px;font-weight:700;letter-spacing:-0.
   align-items: center;
   justify-content: center; /* Zentriert die Zahl exakt */
 }
+/* Kleiner Buchstabe unten rechts in der Ecke */
 .tile-bg-letter {
   position: absolute;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
+  bottom: 2px;
+  right: 4px;
   font-family: var(--body);
-  font-weight: 900;
-  font-size: 3.2rem;
-  opacity: 0.35; /* Etwas stärker, damit man ihn gut sieht */
+  font-weight: 800;
+  font-size: 0.6rem;
+  opacity: 0.55;
   pointer-events: none;
   line-height: 1;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   user-select: none;
-  -webkit-text-stroke: 1.5px currentColor;
+  color: #1d1d1d; /* Immer schwarz, da Kacheln jetzt hell sind */
 }
 .tile-value {
   position: relative;
@@ -359,7 +360,9 @@ h3{font-family:var(--display);margin:0 0 12px;font-weight:700;letter-spacing:-0.
   font-weight: 400;
   letter-spacing: 0.02em;
   line-height: 1;
-  margin: 0; /* Margin entfernt, damit es perfekt mittig sitzt */
+  margin: 0;
+  /* Etwas nach oben/unten schieben, damit die Zahl zentriert wirkt */
+  padding-bottom: 6px;
 }
 .tile.empty{background:var(--panel2-solid);color:var(--muted)}
 
@@ -1302,11 +1305,18 @@ function flagFb(i){
 }
 
 var pc=function(p){
-  var t=Math.max(0,Math.min(1,(p-1)/9)); var R=[214,40,57],W=[255,255,255],G=[24,150,80];
-  var mix=function(a,b,k){return [Math.round(a[0]+(b[0]-a[0])*k), Math.round(a[1]+(b[1]-a[1])*k), Math.round(a[2]+(b[2]-a[2])*k)];};
-  var rgb=t<.5?mix(R,W,t*2):mix(W,G,(t-.5)*2); var r=rgb[0],g=rgb[1],b=rgb[2]; var lum=(r*299+g*587+b*114)/1000;
-  var style = "background:rgb("+r+","+g+","+b+");color:"+(lum>150?"#1d1d1d":"#fff");
-  if(Number(p) === 10){ style += ";border:2.5px solid var(--gold);box-shadow:0 0 10px rgba(255,209,102,0.6)"; }
+  // Exakte Farbcodes für 1-10
+  var colors = {
+    1: "#ea4335", 2: "#ef7267", 3: "#f4a19a", 4: "#f9d0cc", 5: "#ffffff",
+    6: "#d7eedd", 7: "#aeddbb", 8: "#86cb98", 9: "#5dba76", 10: "#34a853"
+  };
+  var bg = colors[p] || "#ffffff";
+  
+  // Immer schwarze Schrift
+  var style = "background:" + bg + ";color:#1d1d1d;";
+  
+  // Goldene Border für die 10
+  if(Number(p) === 10){ style += "border:2.5px solid var(--gold);box-shadow:0 0 10px rgba(255,209,102,0.6)"; }
   return style;
 };
 var idx=function(id){return +String(id).split("-").pop();};
