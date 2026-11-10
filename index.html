@@ -79,6 +79,15 @@ body{
   100% { background-position: 200% center; }
 }
 
+/* NEW: Live Mode Jury Box Flash */
+@keyframes liveBoxFlash {
+  0% { border-color: var(--gold); box-shadow: 0 0 0 0 rgba(255,209,102,0.8), inset 0 0 20px rgba(255,209,102,0.4); transform: scale(1); }
+  30% { border-color: #fff6cc; box-shadow: 0 0 30px 8px rgba(255,209,102,1), inset 0 0 30px rgba(255,209,102,0.6); transform: scale(1.06); }
+  60% { border-color: var(--gold); box-shadow: 0 0 20px 4px rgba(255,209,102,0.6), inset 0 0 15px rgba(255,209,102,0.3); transform: scale(1.02); }
+  100% { border-color: var(--line); box-shadow: none; transform: scale(1); }
+}
+.live-box-flash { animation: liveBoxFlash 1.4s ease-out; }
+
 .flash-update { animation: flashUpdate 1.4s ease-out; }
 
 .wrap{max-width:1600px;margin:0 auto;padding:0 20px 100px}
@@ -490,7 +499,6 @@ dialog input,dialog select{width:100%}
   text-align:center;margin-bottom:14px;color:var(--ink);
 }
 
-/* New condensed layout for ov-row-item */
 .ov-row-item{display:flex;align-items:center;gap:12px;margin-bottom:6px;}
 .ov-pts{display:flex;gap:3px;flex-shrink:0;}
 .ov-pt{
@@ -626,7 +634,7 @@ dialog input,dialog select{width:100%}
 }
 .live-fallback-shows button:hover { filter:brightness(1.1); transform:translateY(-2px); }
 
-/* ── Battle Podium: only winner big & gold ── */
+/* ── Battle Podium ── */
 .battle-podium-winner {
   border-radius: var(--r-xl);
   padding: 36px 28px;
@@ -917,6 +925,11 @@ var ui={big:null,q:"",view:"home",yearId:null,tab:"sf1",subTab:"points",sortMode
 
 var _lastSnapshot = {}; // for detecting changes to flash
 
+// NEW: Temporary state for modal (doesn't get saved until "Fertig")
+var _modalTempRating = null;
+var _modalTempEntryId = null;
+var _modalTempJurId = null;
+
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){showAlert("Error", "Could not save.");}push();}
 
 function getRatings(e){ if(!e) return {}; if(e.songId && S.ratings[e.songId]) return S.ratings[e.songId]; if(S.ratings[e.id]) return S.ratings[e.id]; return {}; }
@@ -1076,6 +1089,16 @@ function applyFlashChanges(changedKeys){
       (function(el){ setTimeout(function(){ el.classList.remove('flash-update'); }, 1400); })(tiles[i]);
     }
   }
+  
+  // NEW: Flash live-mode jury boxes if present
+  var liveBoxes = document.querySelectorAll('[data-live-flash-key]');
+  for(var i=0; i<liveBoxes.length; i++){
+    var key = liveBoxes[i].getAttribute('data-live-flash-key');
+    if(targetKeys[key]){
+      liveBoxes[i].classList.add('live-box-flash');
+      (function(el){ setTimeout(function(){ el.classList.remove('live-box-flash'); }, 1400); })(liveBoxes[i]);
+    }
+  }
 }
 
 var songById=function(id){ for(var i=0; i<S.songs.length; i++) if(S.songs[i].id===id) return S.songs[i]; return null; };
@@ -1196,7 +1219,6 @@ function yearView(){
 
   var liveActive = isLiveActive();
   
-  // If live active and current tab is not a show, show fallback
   var body = "";
   if(liveActive){
     if(y.shows[ui.tab]) body = liveModeView(ui.tab);
@@ -1236,7 +1258,6 @@ function yearView(){
   var headerSection = '<h1 class="yeartitle" style="margin-bottom:'+(hostDisplay?'4px':'24px')+'">Eurovision '+esc(titleLabel)+'</h1>' + hostDisplay;
   var liveBtnStyle = liveActive ? 'background:linear-gradient(135deg,#ff2d95,#a855f7);color:#fff;border-color:transparent;font-weight:700;' : 'background:rgba(255,45,149,0.08);color:var(--pink);border-color:rgba(255,45,149,0.4);font-weight:700;';
 
-  // Live: only show available show tabs
   var showTabs = '';
   if(liveActive){
     if(y.shows.sf1) showTabs += '<button class="'+(ui.tab==="sf1"?"on":"")+'" data-act="tab" data-tab="sf1">Semi-final 1</button>';
@@ -1306,11 +1327,14 @@ function liveModeView(sh){
     var displayVal = (val!==undefined&&val!==null) ? val : '–';
     var clickAttr = isMe ? 'data-act="openPick" data-e="'+currentEntry.id+'" data-jur="'+jur.id+'" title="Punkte ändern"' : '';
     var curStyle = isMe ? 'cursor:pointer;' : 'cursor:default;pointer-events:none;';
-    var flashKey = currentEntry.songId ? 'rating_'+currentEntry.songId+'_'+jur.id : '';
     
-    juryRatingBox += '<div style="background:var(--panel2-solid);border:1px solid var(--line);border-radius:16px;padding:20px 12px;text-align:center;flex:1;min-width:100px;'+(val?pc(val):'')+';">' +
+    // NEW: flash key on the whole box, not just the number
+    var flashKey = currentEntry.songId ? 'rating_'+currentEntry.songId+'_'+jur.id : '';
+    var flashAttr = flashKey ? 'data-live-flash-key="'+flashKey+'"' : '';
+    
+    juryRatingBox += '<div class="live-jury-box" '+flashAttr+' style="background:var(--panel2-solid);border:2.5px solid var(--line);border-radius:16px;padding:20px 12px;text-align:center;flex:1;min-width:100px;transition:border-color 0.2s ease, box-shadow 0.2s ease;">' +
       '<div style="font-size:0.8rem;font-weight:700;color:var(--muted);margin-bottom:12px;letter-spacing:0.05em;text-transform:uppercase;">'+esc(jur.name)+'</div>' +
-      '<div class="live-big-number" '+clickAttr+' '+(flashKey?'data-flash-key="'+flashKey+'"':'')+' style="font-size:2.8rem;'+curStyle+'">'+displayVal+'</div>' +
+      '<div class="live-big-number" '+clickAttr+' style="font-size:2.8rem;'+(val?pc(val):'')+';padding:6px 12px;border-radius:12px;'+curStyle+'">'+displayVal+'</div>' +
     '</div>';
   }
 
@@ -1383,7 +1407,6 @@ function overviewTab(){
       var out = e.dq; var pl = e.place ? '<span class="ov-place">'+e.place+'.</span>' : '<span class="ov-place">–</span>';
       var pill = s ? '<span class="ov-pill'+(out?" out":"")+'"><div class="song-info">'+flag(s.cc)+'<span><b>'+esc(s.title)+'</b></span></div></span>' : '<span class="ov-pill out"><div class="song-info"><span>–</span></div></span>';
       
-      // Layout: Points + Pill (centered) and Place (right)
       rowsOv += '<div class="ov-row-item">' + pts + pill + '<div style="flex-grow:1"></div>' + pl + '</div>';
     }
     return '<h2>Overview</h2><p class="hint">Everyone\'s points side by side. Disqualified or non-qualifying countries are greyed out.</p>' +
@@ -1559,7 +1582,6 @@ function showView(sh){
       var isAdmin = (me === "admin");
       for(var j=0; j<S.jury.length; j++){
         var jur = S.jury[j], v = r[jur.id];
-        // Admin kann ALLE ändern. Normale User nur ihr eigenes Profil.
         var canEdit = isAdmin || (jur.id === me);
         var cls = "tile" + (canEdit?" me":"") + (v!==undefined&&v!==null?"":" empty") + (canEdit?"":" readonly");
         var inner = "<small>"+esc(lab[j])+"</small><b>"+(v!==undefined&&v!==null?v:"–")+"</b>";
@@ -1664,7 +1686,6 @@ function battle(){
         guessCells += '<td class="c"><input type="number" min="1" max="'+fin.length+'" value="'+valStr+'" class="'+(isDup?"dup":"")+'" data-chg="pred" data-e="'+e.id+'" data-j="'+jId+'" '+(isOwn?'':'readonly')+' style="width:60px;text-align:center"></td>';
       }
 
-      // ALWAYS SHOW DIFF (even if hidden)
       var diffCell = "–";
       if(v !== undefined && v !== null && act !== undefined && act !== null){
         var d = Math.abs(v - act); jurorTotals[jId].sum += d; jurorTotals[jId].count++;
@@ -1685,7 +1706,6 @@ function battle(){
   }
   rankings.sort(function(a, b){ return a.sum - b.sum; });
 
-  // Podium: ONLY winner big & gold; runner-ups smaller
   var leaderboardHtml = '';
   if(rankings.length > 0){
     var winner = rankings[0];
@@ -1925,43 +1945,106 @@ function openSong(id,assign){
   }, 50);
 }
 
+/* ─────────────────────────────────────────────────────────────
+   RATING MODAL — with TEMP state (save only on "Fertig")
+   ───────────────────────────────────────────────────────────── */
 function openDetailModal(eId, jurId){
   var e = findEntry(eId); if(!e) return;
   var s = songById(e.songId), r = getRatings(e);
 
   if(!s){ openPicker(eId); return; }
 
-  // Admin: nutze den übergebenen juryId (das angeklickte Tile).
-  // Sonst: nutze eigenes Profil.
   var activeJuryId;
   if (me === "admin") {
-    activeJuryId = jurId || "j3"; // Fallback: Poki
+    activeJuryId = jurId || "j3";
   } else {
     activeJuryId = me;
   }
   var val = r[activeJuryId];
   var activeName = jname(activeJuryId);
 
-  var row1="", row2="";
-  for(var p=1; p<=10; p++){
-    var bHtml = '<button class="rate-modal-btn" style="'+pc(p)+';width:52px;height:56px;font-family:var(--number-font);font-size:1.7rem;border-radius:14px;border:3px solid '+(val===p?'#fff':'transparent')+';cursor:pointer;display:grid;place-items:center;padding:0;'+(val===p?'box-shadow:0 0 16px rgba(255,255,255,0.35);':'')+'" data-act="rateModal" data-e="'+eId+'" data-jur="'+activeJuryId+'" data-p="'+p+'">'+p+'</button>';
-    if(p<=5) row1+=bHtml; else row2+=bHtml;
+  // NEW: Initialize temp state
+  _modalTempRating = (val !== undefined && val !== null) ? val : null;
+  _modalTempEntryId = eId;
+  _modalTempJurId = activeJuryId;
+
+  function renderModalBody() {
+    var displayVal = _modalTempRating;
+    var row1="", row2="";
+    for(var p=1; p<=10; p++){
+      var bHtml = '<button class="rate-modal-btn" style="'+pc(p)+';width:52px;height:56px;font-family:var(--number-font);font-size:1.7rem;border-radius:14px;border:3px solid '+(displayVal===p?'#fff':'transparent')+';cursor:pointer;display:grid;place-items:center;padding:0;'+(displayVal===p?'box-shadow:0 0 16px rgba(255,255,255,0.35);':'')+'" data-act="rateModalTemp" data-p="'+p+'">'+p+'</button>';
+      if(p<=5) row1+=bHtml; else row2+=bHtml;
+    }
+
+    return '<div style="text-align:center;margin-bottom:18px;">' +
+      '<div style="margin-bottom:10px;transform:scale(1.6);display:inline-block;">'+flag(s.cc)+'</div>' +
+      '<h2 style="margin:8px 0 4px;font-size:1.6rem;">'+esc(s.title)+'</h2><p style="color:var(--muted);margin:0;font-size:1rem;">'+esc(s.artist)+' · '+esc(CN[s.cc]||s.cc.toUpperCase())+'</p>' +
+      '<p style="color:var(--gold);margin:6px 0 0;font-size:0.85rem;font-weight:700;letter-spacing:0.05em;">'+esc(activeName)+'</p></div>' +
+    '<div style="background:var(--panel2-solid);border:1px solid var(--line);border-radius:18px;padding:22px;text-align:center;margin-bottom:18px;">' +
+      '<div style="font-family:var(--number-font);font-size:2.2rem;color:var(--gold);margin-bottom:18px;letter-spacing:0.02em;">'+(displayVal!==null&&displayVal!==undefined?displayVal+' / 10 Pts':'– Pts')+'</div>' +
+      '<div style="display:flex;gap:8px;justify-content:center;margin-bottom:12px;">'+row1+'</div>' +
+      '<div style="display:flex;gap:8px;justify-content:center;">'+row2+'</div>' +
+    '</div>' +
+    '<div class="actions" style="margin-top:16px;justify-content:flex-end;">' +
+      '<button class="primary" data-act="saveRatingAndClose">Fertig</button></div>';
   }
 
   dlg.className = "";
-  dlg.innerHTML = '<div style="text-align:center;margin-bottom:18px;">' +
-    '<div style="margin-bottom:10px;transform:scale(1.6);display:inline-block;">'+flag(s.cc)+'</div>' +
-    '<h2 style="margin:8px 0 4px;font-size:1.6rem;">'+esc(s.title)+'</h2><p style="color:var(--muted);margin:0;font-size:1rem;">'+esc(s.artist)+' · '+esc(CN[s.cc]||s.cc.toUpperCase())+'</p>' +
-    '<p style="color:var(--gold);margin:6px 0 0;font-size:0.85rem;font-weight:700;letter-spacing:0.05em;">'+esc(activeName)+'</p></div>' +
-  '<div style="background:var(--panel2-solid);border:1px solid var(--line);border-radius:18px;padding:22px;text-align:center;margin-bottom:18px;">' +
-    '<div style="font-family:var(--number-font);font-size:2.2rem;color:var(--gold);margin-bottom:18px;letter-spacing:0.02em;">'+(val!==undefined&&val!==null?val+' / 10 Pts':'– Pts')+'</div>' +
-    '<div style="display:flex;gap:8px;justify-content:center;margin-bottom:12px;">'+row1+'</div>' +
-    '<div style="display:flex;gap:8px;justify-content:center;">'+row2+'</div>' +
-  '</div>' +
-  '<div class="actions" style="margin-top:16px;justify-content:flex-end;">' +
-    '<button class="primary" data-act="closeDlg">Fertig</button></div>';
-
+  dlg.innerHTML = renderModalBody();
   if(!dlg.open) dlg.showModal();
+}
+
+// NEW: Handle temp rating click (doesn't save yet)
+function handleTempRate(p) {
+  if (_modalTempRating === p) {
+    _modalTempRating = null; // Toggle off
+  } else {
+    _modalTempRating = p;
+  }
+  // Re-render modal body only
+  var modalBody = dlg.querySelector('.rate-modal-btn');
+  if (modalBody) {
+    // Full re-render for simplicity
+    var e = findEntry(_modalTempEntryId);
+    var s = songById(e.songId);
+    var activeName = jname(_modalTempJurId);
+    var displayVal = _modalTempRating;
+    var row1="", row2="";
+    for(var pp=1; pp<=10; pp++){
+      var bHtml = '<button class="rate-modal-btn" style="'+pc(pp)+';width:52px;height:56px;font-family:var(--number-font);font-size:1.7rem;border-radius:14px;border:3px solid '+(displayVal===pp?'#fff':'transparent')+';cursor:pointer;display:grid;place-items:center;padding:0;'+(displayVal===pp?'box-shadow:0 0 16px rgba(255,255,255,0.35);':'')+'" data-act="rateModalTemp" data-p="'+pp+'">'+pp+'</button>';
+      if(pp<=5) row1+=bHtml; else row2+=bHtml;
+    }
+    dlg.innerHTML = '<div style="text-align:center;margin-bottom:18px;">' +
+      '<div style="margin-bottom:10px;transform:scale(1.6);display:inline-block;">'+flag(s.cc)+'</div>' +
+      '<h2 style="margin:8px 0 4px;font-size:1.6rem;">'+esc(s.title)+'</h2><p style="color:var(--muted);margin:0;font-size:1rem;">'+esc(s.artist)+' · '+esc(CN[s.cc]||s.cc.toUpperCase())+'</p>' +
+      '<p style="color:var(--gold);margin:6px 0 0;font-size:0.85rem;font-weight:700;letter-spacing:0.05em;">'+esc(activeName)+'</p></div>' +
+    '<div style="background:var(--panel2-solid);border:1px solid var(--line);border-radius:18px;padding:22px;text-align:center;margin-bottom:18px;">' +
+      '<div style="font-family:var(--number-font);font-size:2.2rem;color:var(--gold);margin-bottom:18px;letter-spacing:0.02em;">'+(displayVal!==null&&displayVal!==undefined?displayVal+' / 10 Pts':'– Pts')+'</div>' +
+      '<div style="display:flex;gap:8px;justify-content:center;margin-bottom:12px;">'+row1+'</div>' +
+      '<div style="display:flex;gap:8px;justify-content:center;">'+row2+'</div>' +
+    '</div>' +
+    '<div class="actions" style="margin-top:16px;justify-content:flex-end;">' +
+      '<button class="primary" data-act="saveRatingAndClose">Fertig</button></div>';
+  }
+}
+
+// NEW: Save the temp rating to state, then close
+function saveRatingAndClose() {
+  if (_modalTempEntryId && _modalTempJurId) {
+    var e = findEntry(_modalTempEntryId);
+    var key = (e && e.songId) ? e.songId : _modalTempEntryId;
+    S.ratings[key] = S.ratings[key] || {};
+    if (_modalTempRating === null) {
+      delete S.ratings[key][_modalTempJurId];
+    } else {
+      S.ratings[key][_modalTempJurId] = _modalTempRating;
+    }
+    save();
+  }
+  _modalTempRating = null;
+  _modalTempEntryId = null;
+  _modalTempJurId = null;
+  dlg.close();
 }
 
 function openRatingModal(eId, jurId) { openDetailModal(eId, jurId); }
@@ -2071,7 +2154,6 @@ var A={
     if(!ui.yearId) return;
     S.liveState[ui.yearId] = S.liveState[ui.yearId] || {active: false, index: 0};
     S.liveState[ui.yearId].active = !S.liveState[ui.yearId].active;
-    // If activating live and current tab isn't a show, redirect to first available show
     if (S.liveState[ui.yearId].active) {
       var y = yearObj(ui.yearId);
       if (!y.shows[ui.tab]) {
@@ -2119,12 +2201,20 @@ var A={
   openNewYearDlg:function(){openNewYearModal();return "keep";},
   tab:function(t){ui.tab=t.dataset.tab;ui.subTab="points";ui.sortMode="order";ui.ovSubTab="semis";ui.editMode=false;ui.enter=true; render();},
   openPick:function(t){ openRatingModal(t.dataset.e, t.dataset.jur || me); return "keep"; },
-  rateModal:function(t){
-    var id = t.dataset.e, p = +t.dataset.p, jurId = t.dataset.jur, e = findEntry(id), key = (e && e.songId) ? e.songId : id;
-    S.ratings[key] = S.ratings[key] || {};
-    if (S.ratings[key][jurId] === p) delete S.ratings[key][jurId]; else S.ratings[key][jurId] = p;
-    save(); openDetailModal(id); return "keep";
+  
+  // NEW: Temp rating click - only updates modal display
+  rateModalTemp:function(t){
+    var p = +t.dataset.p;
+    handleTempRate(p);
+    return "keep";
   },
+  
+  // NEW: Save & close
+  saveRatingAndClose:function(){
+    saveRatingAndClose();
+    return "keep";
+  },
+  
   sbShow:function(t){ui.sbShow=t.dataset.show; render();},
   saveNewYear:function(){
     var yNum=parseInt($("#ny_year").value), suffix=($("#ny_suffix").value||"").trim();
@@ -2197,7 +2287,12 @@ var A={
     return "keep";
   },
   saveCity:function(){ var y=yearObj(ui.yearId), inp=$("#city_input"), ccInp=$("#f_city_cc"); if(y&&inp){ y.city=inp.value.trim()||undefined; y.hostCc=ccInp.value||undefined; save(); } dlg.close(); render(); },
-  closeDlg:function(){dlg.close();return "keep";}, confirmYes:function(){ dlg.close(); if(_pendingConfirmCallback){ var cb=_pendingConfirmCallback; _pendingConfirmCallback=null; cb(); } return "keep"; },
+  closeDlg:function(){
+    // If modal is open with unsaved temp rating, just discard it
+    _modalTempRating = null; _modalTempEntryId = null; _modalTempJurId = null;
+    dlg.close();return "keep";
+  }, 
+  confirmYes:function(){ dlg.close(); if(_pendingConfirmCallback){ var cb=_pendingConfirmCallback; _pendingConfirmCallback=null; cb(); } return "keep"; },
   settings:function(){openSettings();return "keep";}, openJsonEditor:function(){openJsonEditor();return "keep";},
   saveRawJson:function(){
     if (!currentUser) { showToast("Bitte einloggen!", "error"); return "keep"; }
