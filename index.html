@@ -1875,6 +1875,7 @@ function showView(sh){
       var e = listRaw[i], qp = getQualPred(e), actualNQ = (e.place !== undefined && e.place !== null) ? (e.place > 10) : null;
       if(actualNQ !== null){
         for(var j=0; j<S.jury.length; j++){
+          // KORREKTUR: Wenn als NQ getippt (false) und auch tatsächlich raus (actualNQ === true)
           if(qp[S.jury[j].id] === false){ 
             nqStats[S.jury[j].id].totalGuessed++; 
             if(actualNQ === true){ nqStats[S.jury[j].id].correct++; } 
@@ -1962,16 +1963,19 @@ function showView(sh){
         var tipsHtml = "";
         for(var j=0; j<S.jury.length; j++){
           var jur = S.jury[j], jQual = qp[jur.id];
-          var isCurrentProfile = (jur.id === me) || (me === "admin" && jur.id === "j3");
-          var isMe = isCurrentProfile || (me === "admin");
+          // Jeder bearbeitet NUR seine eigenen Tipps.
+          var isMe = (jur.id === me);
           var txt = jQual === false ? "NQ" : "–";
           var bg = "var(--panel2-solid)", col = "var(--muted)", border = "2.5px solid transparent", extraClass = "";
           
           if (jQual === false) { col = "#ffb3c1"; border = "2.5px solid #ff4d6d"; bg = "rgba(255,77,109,0.1)"; }
           if (actualQ !== null && jQual !== undefined) {
-            if (jQual === false) { if (actualQ === false) { bg = "linear-gradient(135deg,#22c55e,#16a34a)"; col = "#fff"; border = "2.5px solid #4ade80"; } else { bg = "linear-gradient(135deg,#ff4d6d,#dc2626)"; col = "#fff"; border = "2.5px solid #ffb3c1"; } }
+            if (jQual === false) { 
+              if (actualQ === false) { bg = "linear-gradient(135deg,#22c55e,#16a34a)"; col = "#fff"; border = "2.5px solid #4ade80"; } 
+              else { bg = "linear-gradient(135deg,#ff4d6d,#dc2626)"; col = "#fff"; border = "2.5px solid #ffb3c1"; } 
+            }
           }
-          if (jQual === undefined) { if (isCurrentProfile) { extraClass = " tip-hidden"; } else { extraClass = " tip-permanently-hidden"; } }
+          if (jQual === undefined) { if (isMe) { extraClass = " tip-hidden"; } else { extraClass = " tip-permanently-hidden"; } }
           
           var clickAttr = isMe ? 'data-act="toggleQual" data-e="'+e.id+'" data-jur="'+jur.id+'"' : '';
           var curStyle = isMe ? 'cursor:pointer;' : 'cursor:default;pointer-events:none;';
@@ -2042,18 +2046,17 @@ function showView(sh){
   };
 
   // LTPK-Buchstaben exakt über den Kacheln ausgerichtet (AVG + Place eingerechnet)
-  var labHeaderLeft = '<div style="display:flex; gap:4px; margin-bottom:8px; justify-content:flex-end; padding-right:128px;">';
+  var labHeaderLeft = '<div style="display:flex; gap:4px; margin-bottom:8px; justify-content:flex-end; padding-right:144px;">';
   for(var j=0; j<S.jury.length; j++){
     labHeaderLeft += '<div class="tile-header-letter">'+esc(lab[j])+'</div>';
   }
   labHeaderLeft += '</div>';
 
-  var labHeaderRight = '<div style="display:flex; gap:4px; margin-bottom:8px; justify-content:flex-end; padding-right:128px;">';
+  var labHeaderRight = '<div style="display:flex; gap:4px; margin-bottom:8px; justify-content:flex-end; padding-right:144px;">';
   for(var j=0; j<S.jury.length; j++){
     labHeaderRight += '<div class="tile-header-letter">'+esc(lab[j])+'</div>';
   }
   labHeaderRight += '</div>';
-
   var leftColHtml = labHeaderLeft; for(var i=0; i<leftList.length; i++){ leftColHtml += renderCard(leftList[i]); }
   var rightColHtml = labHeaderRight; for(var i=0; i<rightList.length; i++){ rightColHtml += renderCard(rightList[i]); }
 
@@ -2633,7 +2636,8 @@ var A={
   ovSubTab:function(t){ ui.ovSubTab = t.dataset.val; render(); },
   
   toggleQual:function(t){
-    var eId = t.dataset.e, jurId = t.dataset.jur; S.qualPred[eId] = S.qualPred[eId] || {};
+    var eId = t.dataset.e, jurId = t.dataset.jur; 
+    S.qualPred[eId] = S.qualPred[eId] || {};
     var cur = S.qualPred[eId][jurId];
     if (cur === undefined) { S.qualPred[eId][jurId] = false; } else { delete S.qualPred[eId][jurId]; }
     save(); render();
