@@ -81,9 +81,9 @@ body{
 
 /* Live Mode Flash */
 @keyframes liveBoxFlash {
-  0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.9); transform: scale(1); }
-  30% { box-shadow: 0 0 36px 12px rgba(255,255,255,1); transform: scale(1.05); }
-  60% { box-shadow: 0 0 22px 5px rgba(255,255,255,0.6); transform: scale(1.02); }
+  0% { box-shadow: 0 0 0 0 rgba(255,209,102,0.9); transform: scale(1); }
+  30% { box-shadow: 0 0 36px 12px rgba(255,209,102,1); transform: scale(1.07); }
+  60% { box-shadow: 0 0 22px 5px rgba(255,209,102,0.6); transform: scale(1.02); }
   100% { box-shadow: none; transform: scale(1); }
 }
 .live-box-flash { animation: liveBoxFlash 1.4s ease-out; }
@@ -346,13 +346,15 @@ h3{font-family:var(--display);margin:0 0 12px;font-weight:700;letter-spacing:-0.
   top: 50%; left: 50%;
   transform: translate(-50%, -50%);
   font-family: var(--display);
-  font-weight: 800;
-  font-size: 2.8rem;
-  opacity: 0.18;
+  font-weight: 900;
+  font-size: 3.2rem;
+  opacity: 0.35;
   pointer-events: none;
   line-height: 1;
   letter-spacing: -0.05em;
   user-select: none;
+  -webkit-text-stroke: 1.5px rgba(255, 255, 255, 0.3);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
 }
 .tile-value {
   position: relative;
@@ -363,6 +365,7 @@ h3{font-family:var(--display);margin:0 0 12px;font-weight:700;letter-spacing:-0.
   letter-spacing: 0.02em;
   line-height: 1;
   margin-top: 2px;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.8), 0 0 10px rgba(0,0,0,0.5);
 }
 .tile:not(.empty):not(.readonly):hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,0.35)}
 .tile:not(.empty):not(.readonly):active{transform:scale(0.95)}
@@ -610,6 +613,7 @@ dialog input,dialog select{width:100%}
   box-shadow:0 0 12px rgba(255,77,109,0.8);
 }
 
+/* Live Current Card with Flag fade left */
 .live-current-card{
   background:
     linear-gradient(135deg, rgba(255,209,102,0.1) 0%, rgba(255,45,149,0.05) 50%, rgba(34,211,238,0.05) 100%),
@@ -625,19 +629,35 @@ dialog input,dialog select{width:100%}
 }
 .live-current-card::before{
   content:"";
-  position:absolute;top:50%;left:50%;
-  transform:translate(-50%,-50%) scale(8);
-  width:40px;height:40px;
+  position:absolute;top:0;left:0;bottom:0;width:280px;
   background-image:var(--live-flag-url);
-  background-size:cover;background-position:center;
-  opacity:0.08;filter:blur(3px);
+  background-size:cover;background-position:left center;
+  mask-image:linear-gradient(to right, rgba(0,0,0,1) 30%, rgba(0,0,0,0) 100%);
+  -webkit-mask-image:linear-gradient(to right, rgba(0,0,0,1) 30%, rgba(0,0,0,0) 100%);
+  opacity:0.85;
   pointer-events:none;
+  z-index: 0;
 }
 .live-current-card.anim-enter {
   animation: liveSongChange 0.65s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+.live-cc-badge {
+  position: absolute;
+  top: 50%; left: 24px;
+  transform: translateY(-50%);
+  font-family: var(--display);
+  font-size: 0.9rem;
+  font-weight: 800;
+  background: rgba(5,3,15,0.85);
+  color: var(--ink);
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.2);
+  letter-spacing: 0.1em;
+  z-index: 2;
+}
 
-/* NEW: Place badge on top of song */
+/* Live Place Badges */
 .live-current-place {
   display: inline-flex;
   align-items: center;
@@ -645,20 +665,18 @@ dialog input,dialog select{width:100%}
   padding: 4px 12px;
   border-radius: 999px;
   font-family: var(--display);
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   font-weight: 800;
-  letter-spacing: 0.06em;
-  margin-bottom: 8px;
+  letter-spacing: 0.04em;
   background: rgba(0,0,0,0.5);
   border: 1px solid rgba(255,255,255,0.25);
   color: #fff;
-  text-shadow: 0 1px 4px rgba(0,0,0,0.6);
 }
-.live-current-place.gold { background: linear-gradient(135deg,#ffd166,#ffae00); color:#1d1d1d; border-color:#fff6cc; text-shadow: none; }
-.live-current-place.silver { background: linear-gradient(135deg,#e5e5e5,#a3a3a3); color:#1d1d1d; border-color:#fff; text-shadow: none; }
-.live-current-place.bronze { background: linear-gradient(135deg,#e5a56b,#cd7f32); color:#1d1d1d; border-color:#f5c896; text-shadow: none; }
+.live-current-place.gold { background: linear-gradient(135deg,#ffd166,#ffae00); color:#1d1d1d; border-color:#fff6cc; }
+.live-current-place.silver { background: linear-gradient(135deg,#e5e5e5,#a3a3a3); color:#1d1d1d; border-color:#fff; }
+.live-current-place.bronze { background: linear-gradient(135deg,#e5a56b,#cd7f32); color:#1d1d1d; border-color:#f5c896; }
 
-/* NEW: Live Jury Boxes - Liquid Glass */
+/* Live Jury Box */
 .live-jury-box {
   flex: 1;
   min-width: 110px;
@@ -1433,9 +1451,29 @@ function liveModeView(sh){
   var currentEntry = list[liveIdx];
   var s = songById(currentEntry.songId);
   var r = getRatings(currentEntry);
-  var place = currentEntry.place;
+  
+  // Plätze ermitteln (Semi & Final separat)
+  var semiPlace = null;
+  var finalPlace = null;
+  
+  if (sh === "sf1" || sh === "sf2") {
+    if (currentEntry.place) semiPlace = currentEntry.place;
+  } else {
+    if (y.shows.sf1) {
+      var sf1Entry = y.shows.sf1.find(function(e){ return e.songId === s.id; });
+      if (sf1Entry && sf1Entry.place) semiPlace = sf1Entry.place;
+    }
+    if (!semiPlace && y.shows.sf2) {
+      var sf2Entry = y.shows.sf2.find(function(e){ return e.songId === s.id; });
+      if (sf2Entry && sf2Entry.place) semiPlace = sf2Entry.place;
+    }
+  }
+  
+  if (y.shows.final) {
+    var finEntry = y.shows.final.find(function(e){ return e.songId === s.id; });
+    if (finEntry && finEntry.place) finalPlace = finEntry.place;
+  }
 
-  // Animation triggering
   var animClass = '';
   if (_lastRenderedLiveIdx !== null && _lastRenderedLiveIdx !== liveIdx) {
     animClass = ' live-song-change';
@@ -1463,11 +1501,9 @@ function liveModeView(sh){
     var textColor = 'var(--muted)';
     if (val !== undefined && val !== null) {
       var colorStyle = pc(val);
-      // extract color from pc's string
       var match = colorStyle.match(/color:([^;]+)/);
       if (match) textColor = match[1];
-      // whole box gets the background color
-      boxStyle = colorStyle.replace(/color:[^;]+;?/, ''); // remove color prop, keep bg
+      boxStyle = colorStyle.replace(/color:[^;]+;?/, '');
     }
     
     var clickAttr = isMe ? 'data-act="openPick" data-e="'+currentEntry.id+'" data-jur="'+jur.id+'" title="Punkte ändern"' : '';
@@ -1482,20 +1518,24 @@ function liveModeView(sh){
     '</div>';
   }
 
-  // Place badge on top of song
-  var placeBadge = '';
-  if (place !== undefined && place !== null && place !== '') {
-    var pNum = parseInt(place);
-    var badgeClass = pNum === 1 ? 'gold' : (pNum === 2 ? 'silver' : (pNum === 3 ? 'bronze' : ''));
-    var icon = pNum === 1 ? '🥇' : (pNum === 2 ? '🥈' : (pNum === 3 ? '🥉' : ''));
-    placeBadge = '<div class="live-current-place '+badgeClass+'">'+ icon + ' Platz ' + place + '</div>';
+  // Place badges (Semi & Final)
+  var placeBadges = '';
+  if (semiPlace) {
+    var pNumS = parseInt(semiPlace);
+    var badgeClassS = pNumS === 1 ? 'gold' : (pNumS === 2 ? 'silver' : (pNumS === 3 ? 'bronze' : ''));
+    placeBadges += '<div class="live-current-place '+badgeClassS+'" style="margin-right:8px;">SF: '+ semiPlace + '.</div>';
+  }
+  if (finalPlace) {
+    var pNumF = parseInt(finalPlace);
+    var badgeClassF = pNumF === 1 ? 'gold' : (pNumF === 2 ? 'silver' : (pNumF === 3 ? 'bronze' : ''));
+    placeBadges += '<div class="live-current-place '+badgeClassF+'">Final: '+ finalPlace + '.</div>';
   }
 
   var currentSongDisplay = s ? 
-    '<div style="display:flex;align-items:center;gap:26px;width:100%;position:relative;z-index:1;">' +
-      '<div style="transform:scale(2.4);margin:0 24px;">'+flag(s.cc)+'</div>' +
+    '<div style="display:flex;align-items:center;gap:26px;width:100%;position:relative;z-index:1;padding-left:70px;">' +
+      '<div class="live-cc-badge">'+esc(getIso3(s.cc))+'</div>' +
       '<div style="flex:1;min-width:0;">' +
-        placeBadge +
+        (placeBadges ? '<div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;">'+placeBadges+'</div>' : '') +
         '<div style="font-size:0.78rem;color:var(--gold);font-weight:800;margin-bottom:6px;letter-spacing:0.12em;text-transform:uppercase;">● Now Playing · Startnummer '+(liveIdx+1)+'</div>' +
         '<h2 style="font-size:2.4rem;margin:0 0 4px;font-weight:800;letter-spacing:-0.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(s.title)+'</h2>' +
         '<p style="font-size:1.2rem;color:var(--muted);margin:0;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(s.artist)+' · '+esc(CN[s.cc]||s.cc.toUpperCase())+'</p>' +
@@ -1560,6 +1600,7 @@ function overviewTab(){
       pts += '</div>';
       var out = e.dq; var pl = e.place ? '<span class="ov-place">'+e.place+'.</span>' : '<span class="ov-place">–</span>';
       var pill = s ? '<span class="ov-pill'+(out?" out":"")+'"><div class="song-info">'+flag(s.cc)+'<span><b>'+esc(s.title)+'</b></span></div></span>' : '<span class="ov-pill out"><div class="song-info"><span>–</span></div></span>';
+      
       rowsOv += '<div class="ov-row-item">' + pts + pill + '<div style="flex-grow:1"></div>' + pl + '</div>';
     }
     return '<h2>Overview</h2><p class="hint">Everyone\'s points side by side. Disqualified or non-qualifying countries are greyed out.</p>' +
@@ -1575,6 +1616,7 @@ function overviewTab(){
       pts += '</div>';
       var out = (e.place && e.place>10) || e.dq; var pl = e.place ? '<span class="ov-place">'+e.place+'.</span>' : '<span class="ov-place">–</span>';
       var pill = s ? '<span class="ov-pill'+(out?" out":"")+'"><div class="song-info">'+flag(s.cc)+'<span><b>'+esc(s.title)+'</b></span></div></span>' : '<span class="ov-pill out"><div class="song-info"><span>–</span></div></span>';
+      
       if(isMirror){ 
         rows += '<div class="ov-row-item"><div style="flex-grow:1"></div>'+pl+pill+pts+'</div>'; 
       } else { 
