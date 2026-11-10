@@ -560,14 +560,14 @@ dialog input,dialog select{width:100%}
   background: rgba(10,6,24,0.5);
   border-color: rgba(50,25,95,0.5);
 }
-/* Text-Elemente werden ausgegraut, die Kacheln (.stats) bleiben unberührt */
-.row.out .meta,
+/* NUR die Text-Elemente ausgrauen, die Kacheln komplett in Ruhe lassen */
+.row.out .meta span,
 .row.out .no,
-.row.out .cc-code,
-.row.out .pl,
-.row.out .row-content > div:not(.meta) {
-  opacity: 0.42;
-  filter: grayscale(0.85);
+.row.out .cc-code {
+  opacity: 0.3 !important; 
+}
+.row.out .row-content {
+  opacity: 0.4; 
 }
 .row.dq{
   opacity:0.3;filter:grayscale(1);
@@ -1182,10 +1182,8 @@ function push(){
 function pull(first){
   if(!DB)return;
   
-  // Wenn die WebSocket-Referenz noch nicht da ist, initialisieren
   if(!dbRef){
     getAuthToken(function(token){
-      // Firebase SDK initialisiert die Referenz (nutzt automatisch WebSocket)
       dbRef = firebase.database().ref();
       
       // Einmaliges Initial-Laden (das ist der einzige große Download!)
@@ -1203,31 +1201,50 @@ function pull(first){
         net="error";
       });
       
-      // Jetzt auf Echtzeit-Änderungen lauschen (nur Deltas!)
-      dbRef.on("value", function(snapshot){
-        net="online";
-        var t = snapshot.val();
-        if(!t) return;
-        
-        var a = document.activeElement;
-        if(dlg.open || (a && /INPUT|SELECT|TEXTAREA/.test(a.tagName))) return;
-        
-        var f = flat(t);
-        if(same(f, lastFlat)) return;
-        
-        var changedKeys = [];
-        for(var k in f){ if(f[k] !== lastFlat[k]) changedKeys.push(k); }
-        
-        _lastSnapshot = changedKeys;
-        S = fromTree(t);
-        lastFlat = f;
-        try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){}
-        render();
-        
-        if(changedKeys.length > 0) applyFlashChanges(changedKeys);
-      }, function(error){
-        console.warn("Firebase listen error:", error);
-        net = "error";
+      // WICHTIG: Nur auf die Pfade hören, die sich tatsächlich ändern.
+      // Root-Listener ("value" auf alles) feuert bei jeder Kleinigkeit
+      // und kann bei vielen Usern teuer werden.
+      var watchedPaths = ["ratings", "pred", "qualPred", "liveState", "battleHidden"];
+      watchedPaths.forEach(function(path){
+        dbRef.child(path).on("value", function(snapshot){
+          net = "online";
+          var a = document.activeElement;
+var isTyping = a && /INPUT|SELECT|TEXTAREA/.test(a.tagName);
+// Wenn der User gerade tippt, verzögert aktualisieren (aber nicht verlieren!)
+if(dlg.open || isTyping){
+  setTimeout(function(){ 
+    if(!dlg.open && !isTyping) { render(); }
+  }, 1500);
+  return;
+}
+          
+          var t = {};
+          t[path] = snapshot.val();
+          
+          // Nur den betroffenen Teilbaum aktualisieren
+          if(path === "ratings") S.ratings = t[path] || {};
+          else if(path === "pred") S.pred = t[path] || {};
+          else if(path === "qualPred") S.qualPred = t[path] || {};
+          else if(path === "liveState") S.liveState = t[path] || {};
+          else if(path === "battleHidden") S.battleHidden = !!t[path];
+          
+          // Flash-Animation für geänderte Werte
+          var changedKeys = [];
+          var newFlat = flat(t);
+          for(var k in newFlat){ if(newFlat[k] !== lastFlat[k]) changedKeys.push(k); }
+          for(var k in lastFlat){ if(k.startsWith(path + "/") && !(k in newFlat)) changedKeys.push(k); }
+          
+          for(var k in newFlat) lastFlat[k] = newFlat[k];
+          for(var k in lastFlat){ if(k.startsWith(path + "/") && !(k in newFlat)) delete lastFlat[k]; }
+          
+          try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){}
+          render();
+          
+          if(changedKeys.length > 0) applyFlashChanges(changedKeys);
+        }, function(error){
+          console.warn("Firebase listen error for " + path + ":", error);
+          net = "error";
+        });
       });
     });
   }
