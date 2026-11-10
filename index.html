@@ -1042,6 +1042,9 @@ var me=localStorage.getItem(MEKEY)||"admin";
 var ui={big:null,q:"",view:"home",yearId:null,tab:"sf1",subTab:"points",sortMode:"order",ovSubTab:"semis",sbShow:"final",editMode:false,assign:null,editSong:null,libYear:"",libSort:"name",compareCc:null,enter:false};
 
 var _lastSnapshot = {}; // for detecting changes to flash
+var _modalTempRating = null;
+var _modalTempEntryId = null;
+var _modalTempJurId = null;
 
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){showAlert("Error", "Could not save.");}push();}
 
@@ -2109,37 +2112,114 @@ function openDetailModal(eId, jurId){
 
   if(!s){ openPicker(eId); return; }
 
-  // Admin: nutze den übergebenen juryId (das angeklickte Tile).
-  // Sonst: nutze eigenes Profil.
   var activeJuryId;
   if (me === "admin") {
-    activeJuryId = jurId || "j3"; // Fallback: Poki
+    activeJuryId = jurId || "j3";
   } else {
     activeJuryId = me;
   }
   var val = r[activeJuryId];
   var activeName = jname(activeJuryId);
 
-  var row1="", row2="";
-  for(var p=1; p<=10; p++){
-    var bHtml = '<button class="rate-modal-btn" style="'+pc(p)+';width:52px;height:56px;font-family:var(--number-font);font-size:1.7rem;border-radius:14px;border:3px solid '+(val===p?'#fff':'transparent')+';cursor:pointer;display:grid;place-items:center;padding:0;'+(val===p?'box-shadow:0 0 16px rgba(255,255,255,0.35);':'')+'" data-act="rateModal" data-e="'+eId+'" data-jur="'+activeJuryId+'" data-p="'+p+'">'+p+'</button>';
-    if(p<=5) row1+=bHtml; else row2+=bHtml;
+  // WICHTIG: Temp-Werte setzen (nur im Speicher, nicht in Firebase)
+  _modalTempRating = (val !== undefined && val !== null) ? val : null;
+  _modalTempEntryId = eId;
+  _modalTempJurId = activeJuryId;
+
+  function buildModal() {
+    var displayVal = _modalTempRating;
+    var row1="", row2="";
+    for(var p=1; p<=10; p++){
+      var isActive = (displayVal===p);
+      var btnStyle = pc(p);
+      var bHtml = '<button class="rate-modal-btn" style="'+
+        btnStyle+
+        ';width:64px;height:68px;font-family:var(--number-font);font-size:2.2rem;'+
+        'border-radius:16px;'+
+        'border:4px solid '+(isActive?'#fff':'transparent')+';'+
+        'cursor:pointer;display:grid;place-items:center;padding:0;'+
+        'transition:transform 0.15s ease-out, box-shadow 0.15s ease-out;'+
+        (isActive?'box-shadow:0 0 28px rgba(255,255,255,0.8), 0 0 0 2px #fff inset; transform:scale(1.08);':'')+
+        '" data-act="rateModalTemp" data-p="'+p+'">'+p+'</button>';
+      if(p<=5) row1+=bHtml; else row2+=bHtml;
+    }
+
+    return '<div style="text-align:center;margin-bottom:20px;">' +
+      '<div style="margin-bottom:12px;transform:scale(1.8);display:inline-block;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.5));">'+flag(s.cc)+'</div>' +
+      '<h2 style="margin:10px 0 4px;font-size:1.7rem;">'+esc(s.title)+'</h2>' +
+      '<p style="color:var(--muted);margin:0;font-size:1rem;">'+esc(s.artist)+' · '+esc(CN[s.cc]||s.cc.toUpperCase())+'</p>' +
+      '<p style="color:var(--gold);margin:8px 0 0;font-size:0.85rem;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;">'+esc(activeName)+'</p>' +
+    '</div>' +
+    '<div style="background:linear-gradient(135deg, rgba(255,209,102,0.06) 0%, var(--panel2-solid) 100%);border:1px solid var(--line);border-radius:22px;padding:24px 20px;text-align:center;margin-bottom:20px;box-shadow:inset 0 2px 8px rgba(0,0,0,0.3);">' +
+      '<div style="font-family:var(--number-font);font-size:2.8rem;color:var(--gold);margin-bottom:22px;letter-spacing:0.03em;text-shadow:0 0 20px rgba(255,209,102,0.4);">'+(displayVal!==null&&displayVal!==undefined?displayVal+' <span style="font-size:1.2rem;color:var(--muted);">/ 10 Pts</span>':'<span style="color:var(--muted);font-size:1.4rem;">– Pts</span>')+'</div>' +
+      '<div style="display:flex;gap:10px;justify-content:center;margin-bottom:14px;flex-wrap:wrap;">'+row1+'</div>' +
+      '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">'+row2+'</div>' +
+    '</div>' +
+    '<div class="actions" style="margin-top:18px;justify-content:flex-end;">' +
+      '<button class="primary" data-act="saveRatingAndClose" style="padding:12px 32px;font-size:1rem;">Fertig</button></div>';
   }
 
   dlg.className = "";
-  dlg.innerHTML = '<div style="text-align:center;margin-bottom:18px;">' +
-    '<div style="margin-bottom:10px;transform:scale(1.6);display:inline-block;">'+flag(s.cc)+'</div>' +
-    '<h2 style="margin:8px 0 4px;font-size:1.6rem;">'+esc(s.title)+'</h2><p style="color:var(--muted);margin:0;font-size:1rem;">'+esc(s.artist)+' · '+esc(CN[s.cc]||s.cc.toUpperCase())+'</p>' +
-    '<p style="color:var(--gold);margin:6px 0 0;font-size:0.85rem;font-weight:700;letter-spacing:0.05em;">'+esc(activeName)+'</p></div>' +
-  '<div style="background:var(--panel2-solid);border:1px solid var(--line);border-radius:18px;padding:22px;text-align:center;margin-bottom:18px;">' +
-    '<div style="font-family:var(--number-font);font-size:2.2rem;color:var(--gold);margin-bottom:18px;letter-spacing:0.02em;">'+(val!==undefined&&val!==null?val+' / 10 Pts':'– Pts')+'</div>' +
-    '<div style="display:flex;gap:8px;justify-content:center;margin-bottom:12px;">'+row1+'</div>' +
-    '<div style="display:flex;gap:8px;justify-content:center;">'+row2+'</div>' +
-  '</div>' +
-  '<div class="actions" style="margin-top:16px;justify-content:flex-end;">' +
-    '<button class="primary" data-act="closeDlg">Fertig</button></div>';
-
+  dlg.innerHTML = buildModal();
   if(!dlg.open) dlg.showModal();
+}
+
+function handleTempRate(p) {
+  if (_modalTempRating === p) {
+    _modalTempRating = null;
+  } else {
+    _modalTempRating = p;
+  }
+  var e = findEntry(_modalTempEntryId);
+  var s = songById(e.songId);
+  var activeName = jname(_modalTempJurId);
+  var displayVal = _modalTempRating;
+  var row1="", row2="";
+  for(var pp=1; pp<=10; pp++){
+    var isActive = (displayVal===pp);
+    var btnStyle = pc(pp);
+    var bHtml = '<button class="rate-modal-btn" style="'+
+      btnStyle+
+      ';width:64px;height:68px;font-family:var(--number-font);font-size:2.2rem;'+
+      'border-radius:16px;'+
+      'border:4px solid '+(isActive?'#fff':'transparent')+';'+
+      'cursor:pointer;display:grid;place-items:center;padding:0;'+
+      'transition:transform 0.15s ease-out, box-shadow 0.15s ease-out;'+
+      (isActive?'box-shadow:0 0 28px rgba(255,255,255,0.8), 0 0 0 2px #fff inset; transform:scale(1.08);':'')+
+      '" data-act="rateModalTemp" data-p="'+pp+'">'+pp+'</button>';
+    if(pp<=5) row1+=bHtml; else row2+=bHtml;
+  }
+  dlg.innerHTML = '<div style="text-align:center;margin-bottom:20px;">' +
+    '<div style="margin-bottom:12px;transform:scale(1.8);display:inline-block;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.5));">'+flag(s.cc)+'</div>' +
+    '<h2 style="margin:10px 0 4px;font-size:1.7rem;">'+esc(s.title)+'</h2>' +
+    '<p style="color:var(--muted);margin:0;font-size:1rem;">'+esc(s.artist)+' · '+esc(CN[s.cc]||s.cc.toUpperCase())+'</p>' +
+    '<p style="color:var(--gold);margin:8px 0 0;font-size:0.85rem;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;">'+esc(activeName)+'</p>' +
+  '</div>' +
+  '<div style="background:linear-gradient(135deg, rgba(255,209,102,0.06) 0%, var(--panel2-solid) 100%);border:1px solid var(--line);border-radius:22px;padding:24px 20px;text-align:center;margin-bottom:20px;box-shadow:inset 0 2px 8px rgba(0,0,0,0.3);">' +
+    '<div style="font-family:var(--number-font);font-size:2.8rem;color:var(--gold);margin-bottom:22px;letter-spacing:0.03em;text-shadow:0 0 20px rgba(255,209,102,0.4);">'+(displayVal!==null&&displayVal!==undefined?displayVal+' <span style="font-size:1.2rem;color:var(--muted);">/ 10 Pts</span>':'<span style="color:var(--muted);font-size:1.4rem;">– Pts</span>')+'</div>' +
+    '<div style="display:flex;gap:10px;justify-content:center;margin-bottom:14px;flex-wrap:wrap;">'+row1+'</div>' +
+    '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">'+row2+'</div>' +
+  '</div>' +
+  '<div class="actions" style="margin-top:18px;justify-content:flex-end;">' +
+    '<button class="primary" data-act="saveRatingAndClose" style="padding:12px 32px;font-size:1rem;">Fertig</button></div>';
+}
+
+function saveRatingAndClose() {
+  if (_modalTempEntryId && _modalTempJurId) {
+    var e = findEntry(_modalTempEntryId);
+    var key = (e && e.songId) ? e.songId : _modalTempEntryId;
+    S.ratings[key] = S.ratings[key] || {};
+    if (_modalTempRating === null) {
+      delete S.ratings[key][_modalTempJurId];
+    } else {
+      S.ratings[key][_modalTempJurId] = _modalTempRating;
+    }
+    save();
+  }
+  _modalTempRating = null;
+  _modalTempEntryId = null;
+  _modalTempJurId = null;
+  dlg.close();
 }
 
 function openRatingModal(eId, jurId) { openDetailModal(eId, jurId); }
@@ -2297,11 +2377,14 @@ var A={
   openNewYearDlg:function(){openNewYearModal();return "keep";},
   tab:function(t){ui.tab=t.dataset.tab;ui.subTab="points";ui.sortMode="order";ui.ovSubTab="semis";ui.editMode=false;ui.enter=true; render();},
   openPick:function(t){ openRatingModal(t.dataset.e, t.dataset.jur || me); return "keep"; },
-  rateModal:function(t){
-    var id = t.dataset.e, p = +t.dataset.p, jurId = t.dataset.jur, e = findEntry(id), key = (e && e.songId) ? e.songId : id;
-    S.ratings[key] = S.ratings[key] || {};
-    if (S.ratings[key][jurId] === p) delete S.ratings[key][jurId]; else S.ratings[key][jurId] = p;
-    save(); openDetailModal(id); return "keep";
+  rateModalTemp:function(t){
+    var p = +t.dataset.p;
+    handleTempRate(p);
+    return "keep";
+  },
+  saveRatingAndClose:function(){
+    saveRatingAndClose();
+    return "keep";
   },
   sbShow:function(t){ui.sbShow=t.dataset.show; render();},
   saveNewYear:function(){
@@ -2375,8 +2458,11 @@ var A={
     return "keep";
   },
   saveCity:function(){ var y=yearObj(ui.yearId), inp=$("#city_input"), ccInp=$("#f_city_cc"); if(y&&inp){ y.city=inp.value.trim()||undefined; y.hostCc=ccInp.value||undefined; save(); } dlg.close(); render(); },
-  closeDlg:function(){dlg.close();return "keep";}, confirmYes:function(){ dlg.close(); if(_pendingConfirmCallback){ var cb=_pendingConfirmCallback; _pendingConfirmCallback=null; cb(); } return "keep"; },
-  settings:function(){openSettings();return "keep";}, openJsonEditor:function(){openJsonEditor();return "keep";},
+  closeDlg:function(){
+    _modalTempRating = null; _modalTempEntryId = null; _modalTempJurId = null;
+    dlg.close(); return "keep";
+  }, 
+  confirmYes:function(){ dlg.close(); if(_pendingConfirmCallback){ var cb=_pendingConfirmCallback; _pendingConfirmCallback=null; cb(); } return "keep"; },  settings:function(){openSettings();return "keep";}, openJsonEditor:function(){openJsonEditor();return "keep";},
   saveRawJson:function(){
     if (!currentUser) { showToast("Bitte einloggen!", "error"); return "keep"; }
     try {
