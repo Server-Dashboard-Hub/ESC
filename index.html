@@ -91,6 +91,19 @@ body{
 
 .flash-update { animation: flashUpdate 1.4s ease-out; }
 
+@keyframes goldGlowPulse {
+  0%, 100% { box-shadow:0 0 18px rgba(255,209,102,0.9), 0 0 36px rgba(255,209,102,0.5), inset 0 0 14px rgba(255,255,255,0.6); }
+  50%      { box-shadow:0 0 26px rgba(255,230,150,1), 0 0 52px rgba(255,209,102,0.8), inset 0 0 20px rgba(255,255,255,0.85); }
+}
+
+/* NEU: Schatten & Farb-Fade für die normalen Kacheln (1-9) wie im Live Mode */
+.tile[data-flash-key] {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -2px 6px rgba(0,0,0,0.15);
+  background-image: linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 55%, rgba(0,0,0,0.12) 100%);
+  background-blend-mode: overlay;
+}
+.tile[data-flash-key]:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.45); }
+
 .wrap{max-width:1600px;margin:0 auto;padding:0 20px 100px}
 
 header{
@@ -243,7 +256,7 @@ h3{font-family:var(--display);margin:0 0 12px;font-weight:700;letter-spacing:-0.
 
 .row{
   position:relative;overflow:hidden;
-  display:grid;grid-template-columns:52px 1fr auto;gap:14px;
+  display:grid;grid-template-columns:38px 1fr auto;gap:14px;
   background:var(--panel);border:1px solid var(--line);
   border-radius:var(--r-md);padding:12px 14px;align-items:center;
   animation: fadeUp 0.25s ease-out backwards;
@@ -265,7 +278,7 @@ h3{font-family:var(--display);margin:0 0 12px;font-weight:700;letter-spacing:-0.
 .row > * { position: relative; z-index: 1; }
 
 .cc-code{
-  position: absolute;top: 50%;left: 84px;transform: translateY(-50%);
+  position: absolute;top: 50%;left: 66px;transform: translateY(-50%);
   font-family: var(--display);font-size: 0.6rem;font-weight: 800;
   background: rgba(5,3,15,0.85);color: var(--ink);
   padding: 3px 6px;border-radius: 5px;
@@ -276,14 +289,15 @@ h3{font-family:var(--display);margin:0 0 12px;font-weight:700;letter-spacing:-0.
 @media(max-width:700px){ .row{grid-template-columns:1fr;gap:10px} .pl{justify-self:start!important} }
 
 .no{
-  font-family:var(--display);font-weight:800;font-size:0.95rem;
-  color:var(--ink);background: rgba(5,3,15,0.85);
-  border-radius:12px;width:52px;height:52px;
+  font-family:var(--display);font-weight:700;font-size:0.78rem;
+  color:var(--muted);background: rgba(5,3,15,0.55);
+  border-radius:9px;width:38px;height:38px;
   display:flex;align-items:center;justify-content:center;
-  cursor:pointer;border:1px solid rgba(255, 255, 255, 0.15);flex-shrink:0;
-  transition: color 0.15s, border-color 0.15s, background-color 0.15s;
+  cursor:pointer;border:1px solid rgba(255,255,255,0.08);flex-shrink:0;
+  opacity:0.7;
+  transition: color 0.15s, border-color 0.15s, background-color 0.15s, opacity 0.15s;
 }
-.no:hover{border-color:var(--gold);color:var(--gold);background:rgba(5,3,15,0.95)}
+.no:hover{border-color:var(--gold);color:var(--gold);background:rgba(5,3,15,0.9);opacity:1}
 
 .row-content{ 
   display:flex;
@@ -1355,20 +1369,23 @@ function flagFb(i){
 }
 
 var pc=function(p){
-  // Exakte Farbcodes für 1-10
+  // Exakte Farbcodes für 1-9 (unverändert)
   var colors = {
     1: "#ea4335", 2: "#ef7267", 3: "#f4a19a", 4: "#f9d0cc", 5: "#ffffff",
-    6: "#d7eedd", 7: "#aeddbb", 8: "#86cb98", 9: "#5dba76", 10: "#34a853"
+    6: "#d7eedd", 7: "#aeddbb", 8: "#86cb98", 9: "#5dba76"
   };
-  var bg = colors[p] || "#ffffff";
   
-  // Standard: schwarze Schrift
-  var style = "background:" + bg + ";color:#1d1d1d;";
-  
-  // Die 10 bekommt goldene Glow-Schrift
-  if(Number(p) === 10){ 
-    style = "background:" + bg + ";color:#ffd166;text-shadow:0 0 12px rgba(255,209,102,0.9), 0 0 20px rgba(255,209,102,0.6);border:2.5px solid var(--gold);box-shadow:0 0 12px rgba(255,209,102,0.6)"; 
+  // Die 10: goldenes Glow-Revamp
+  if(Number(p) === 10){
+    return "background:radial-gradient(circle at 30% 30%, #fff6cc 0%, #ffd166 35%, #ffae00 100%);" +
+      "color:#ffffff;text-shadow:0 0 10px rgba(255,255,255,1), 0 0 22px rgba(255,230,150,1), 0 0 40px rgba(255,209,102,0.9);" +
+      "border:2.5px solid #fff6cc;box-shadow:0 0 18px rgba(255,209,102,0.9), 0 0 36px rgba(255,209,102,0.5), inset 0 0 14px rgba(255,255,255,0.6);" +
+      "animation:goldGlowPulse 2s ease-in-out infinite;";
   }
+  
+  var bg = colors[p] || "#ffffff";
+  // Standard 1-9: farbiger Hintergrund, dunkle Schrift
+  var style = "background:" + bg + ";color:#1d1d1d;";
   return style;
 };
 var idx=function(id){return +String(id).split("-").pop();};
@@ -1929,17 +1946,16 @@ function showView(sh){
       '<div style="display:flex;align-items:center;gap:12px"><div class="stats">'+mainStatsHtml+'</div>'+placeInputHtml+'</div></div>';
   };
 
-  // NEU: Die Buchstaben-Reihe (L T P K) für die linke Spalte, als vertikale Boxen
-  var labHeaderLeft = '<div style="display:flex; gap:4px; margin-bottom:8px; align-items:flex-end; justify-content:flex-end; padding-right:60px;">';
+  // LTPK-Buchstaben horizontal, direkt unter den Bewertungskacheln (in einer Spalte)
+  var labHeaderLeft = '<div style="display:flex; gap:4px; margin-bottom:8px; justify-content:flex-end; padding-right:54px;">';
   for(var j=0; j<S.jury.length; j++){
-    labHeaderLeft += '<div class="tile-header-letter" style="writing-mode:vertical-rl; transform:rotate(180deg); height:46px; width:24px; padding:4px 0;">'+esc(lab[j])+'</div>';
+    labHeaderLeft += '<div class="tile-header-letter">'+esc(lab[j])+'</div>';
   }
   labHeaderLeft += '</div>';
 
-  // NEU: Die Buchstaben-Reihe (L T P K) für die rechte Spalte, als vertikale Boxen
-  var labHeaderRight = '<div style="display:flex; gap:4px; margin-bottom:8px; align-items:flex-end; justify-content:flex-end; padding-right:60px;">';
+  var labHeaderRight = '<div style="display:flex; gap:4px; margin-bottom:8px; justify-content:flex-end; padding-right:54px;">';
   for(var j=0; j<S.jury.length; j++){
-    labHeaderRight += '<div class="tile-header-letter" style="writing-mode:vertical-rl; transform:rotate(180deg); height:46px; width:24px; padding:4px 0;">'+esc(lab[j])+'</div>';
+    labHeaderRight += '<div class="tile-header-letter">'+esc(lab[j])+'</div>';
   }
   labHeaderRight += '</div>';
 
