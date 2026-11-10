@@ -1556,15 +1556,17 @@ function showView(sh){
       var avg = vals.length ? sum / vals.length : null;
 
       var tiles = "";
+      var isAdmin = (me === "admin");
       for(var j=0; j<S.jury.length; j++){
         var jur = S.jury[j], v = r[jur.id];
-        var isMe = (jur.id === me) || (me === "admin" && jur.id === "j3");
-        var cls = "tile" + (isMe?" me":"") + (v!==undefined&&v!==null?"":" empty") + (isMe?"":" readonly");
+        // Admin kann ALLE ändern. Normale User nur ihr eigenes Profil.
+        var canEdit = isAdmin || (jur.id === me);
+        var cls = "tile" + (canEdit?" me":"") + (v!==undefined&&v!==null?"":" empty") + (canEdit?"":" readonly");
         var inner = "<small>"+esc(lab[j])+"</small><b>"+(v!==undefined&&v!==null?v:"–")+"</b>";
         var flashKey = e.songId ? 'rating_'+e.songId+'_'+jur.id : '';
         var flashAttr = flashKey ? 'data-flash-key="'+flashKey+'"' : '';
         
-        if(s && isMe){ tiles += '<button class="'+cls+'" '+flashAttr+' style="'+(v?pc(v):"")+'" data-act="openPick" data-e="'+e.id+'" data-jur="'+jur.id+'" title="'+esc(jur.name)+'">'+inner+'</button>'; }
+        if(s && canEdit){ tiles += '<button class="'+cls+'" '+flashAttr+' style="'+(v?pc(v):"")+'" data-act="openPick" data-e="'+e.id+'" data-jur="'+jur.id+'" title="'+esc(jur.name)+'">'+inner+'</button>'; }
         else { tiles += '<div class="'+cls+'" '+flashAttr+' style="'+(v?pc(v):"")+'" title="'+esc(jur.name)+'">'+inner+'</div>'; }
       }
       mainStatsHtml = '<div class="tiles">'+tiles+'</div><div class="avg"><b>'+(avg==null?"–":avg.toFixed(1))+'</b><small>AVG</small></div>';
@@ -1923,13 +1925,20 @@ function openSong(id,assign){
   }, 50);
 }
 
-function openDetailModal(eId){
+function openDetailModal(eId, jurId){
   var e = findEntry(eId); if(!e) return;
   var s = songById(e.songId), r = getRatings(e);
 
   if(!s){ openPicker(eId); return; }
 
-  var activeJuryId = (me === "admin") ? "j3" : me;
+  // Admin: nutze den übergebenen juryId (das angeklickte Tile).
+  // Sonst: nutze eigenes Profil.
+  var activeJuryId;
+  if (me === "admin") {
+    activeJuryId = jurId || "j3"; // Fallback: Poki
+  } else {
+    activeJuryId = me;
+  }
   var val = r[activeJuryId];
   var activeName = jname(activeJuryId);
 
@@ -1955,7 +1964,7 @@ function openDetailModal(eId){
   if(!dlg.open) dlg.showModal();
 }
 
-function openRatingModal(eId, jurId) { openDetailModal(eId); }
+function openRatingModal(eId, jurId) { openDetailModal(eId, jurId); }
 
 function openPicker(entryId){ ui.assign=entryId; pickerHtml(); }
 function pickerHtml(){
