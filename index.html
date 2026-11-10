@@ -321,8 +321,11 @@ h3{font-family:var(--display);margin:0 0 12px;font-weight:700;letter-spacing:-0.
 .tile:not(.empty):not(.readonly):active{transform:scale(0.95)}
 .tile.readonly{cursor:default;pointer-events:none}
 .tile {
-  position: relative; /* Wichtig für den Hintergrund-Buchstaben */
+  position: relative;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Zentriert die Zahl exakt */
 }
 .tile-bg-letter {
   position: absolute;
@@ -331,7 +334,7 @@ h3{font-family:var(--display);margin:0 0 12px;font-weight:700;letter-spacing:-0.
   font-family: var(--body);
   font-weight: 900;
   font-size: 3.2rem;
-  opacity: 0.25;
+  opacity: 0.35; /* Etwas stärker, damit man ihn gut sieht */
   pointer-events: none;
   line-height: 1;
   letter-spacing: -0.02em;
@@ -346,7 +349,7 @@ h3{font-family:var(--display);margin:0 0 12px;font-weight:700;letter-spacing:-0.
   font-weight: 400;
   letter-spacing: 0.02em;
   line-height: 1;
-  margin-top: 2px;
+  margin: 0; /* Margin entfernt, damit es perfekt mittig sitzt */
 }
 .tile.empty{background:var(--panel2-solid);color:var(--muted)}
 
@@ -613,13 +616,13 @@ dialog input,dialog select{width:100%}
 
 .live-current-card::before{
   content:"";
-  position:absolute;top:0;left:0;bottom:0;width:75%; /* Breiter machen */
+  position:absolute;top:0;left:0;bottom:0;width:45%; /* Schmaler, damit sie nicht zu weit rechts ist */
   background-image:var(--live-flag-url);
   background-size:cover;background-position:left center;
-  /* Fade out erst gaaanz spät */
-  mask-image:linear-gradient(to right, rgba(0,0,0,1) 70%, rgba(0,0,0,0) 100%);
-  -webkit-mask-image:linear-gradient(to right, rgba(0,0,0,1) 70%, rgba(0,0,0,0) 100%);
-  opacity:0.6; /* Etwas transparenter, damit Text lesbar bleibt */
+  /* Weicher und früher ausblenden */
+  mask-image:linear-gradient(to right, rgba(0,0,0,1) 10%, rgba(0,0,0,0) 100%);
+  -webkit-mask-image:linear-gradient(to right, rgba(0,0,0,1) 10%, rgba(0,0,0,0) 100%);
+  opacity:0.75; /* Etwas kräftiger, da sie jetzt kleiner ist */
   pointer-events:none;
   z-index: 0;
 }
@@ -1700,7 +1703,7 @@ function showView(sh){
     var mainStatsHtml = "";
     if (sh !== "final" && ui.subTab === "tips") {
       if (isAutoFinal) {
-        mainStatsHtml = '<div class="tiles"><div class="tile aq-tile"><small>AQ</small><b style="font-size:0.9rem">✓</b></div></div>';
+        mainStatsHtml = '<div class="tiles"><div class="tile aq-tile"><div class="tile-value" style="font-size:0.9rem;font-family:var(--display);font-weight:800;">AQ ✓</div></div></div>';
       } else {
         var tipsHtml = "";
         for(var j=0; j<S.jury.length; j++){
@@ -1718,7 +1721,7 @@ function showView(sh){
           
           var clickAttr = isMe ? 'data-act="toggleQual" data-e="'+e.id+'" data-jur="'+jur.id+'"' : '';
           var curStyle = isMe ? 'cursor:pointer;' : 'cursor:default;pointer-events:none;';
-          tipsHtml += '<button class="tile '+(isMe?"me":"empty")+extraClass+'" style="background:'+bg+';color:'+col+';border:'+border+';'+curStyle+'" '+clickAttr+' title="'+esc(jur.name)+'"><small>'+esc(lab[j])+'</small><b>'+txt+'</b></button>';
+          tipsHtml += '<button class="tile '+(isMe?"me":"empty")+extraClass+'" style="background:'+bg+';color:'+col+';border:'+border+';'+curStyle+'" '+clickAttr+' title="'+esc(jur.name)+'"><div class="tile-bg-letter" style="color:'+col+'">'+esc(lab[j])+'</div><div class="tile-value">'+txt+'</div></button>';
         }
         mainStatsHtml = '<div class="tiles">'+tipsHtml+'</div>';
       }
@@ -1734,7 +1737,10 @@ function showView(sh){
         // Admin kann ALLE ändern. Normale User nur ihr eigenes Profil.
         var canEdit = isAdmin || (jur.id === me);
         var cls = "tile" + (canEdit?" me":"") + (v!==undefined&&v!==null?"":" empty") + (canEdit?"":" readonly");
-        var inner = "<small>"+esc(lab[j])+"</small><b>"+(v!==undefined&&v!==null?v:"–")+"</b>";
+        
+        // HIER ist der neue Aufbau mit Hintergrund-Buchstabe und Vordergrund-Zahl
+        var inner = '<div class="tile-bg-letter">'+esc(lab[j])+'</div><div class="tile-value">'+((v!==undefined&&v!==null)?v:"–")+'</div>';
+        
         var flashKey = e.songId ? 'rating_'+e.songId+'_'+jur.id : '';
         var flashAttr = flashKey ? 'data-flash-key="'+flashKey+'"' : '';
         
