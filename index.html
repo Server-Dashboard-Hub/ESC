@@ -1963,8 +1963,8 @@ function showView(sh){
         var tipsHtml = "";
         for(var j=0; j<S.jury.length; j++){
           var jur = S.jury[j], jQual = qp[jur.id];
-          // Jeder bearbeitet NUR seine eigenen Tipps.
-          var isMe = (jur.id === me);
+          // Admin darf alle bearbeiten, normale User nur ihre eigenen Tipps.
+          var isMe = (jur.id === me) || (me === "admin");
           var txt = jQual === false ? "NQ" : "–";
           var bg = "var(--panel2-solid)", col = "var(--muted)", border = "2.5px solid transparent", extraClass = "";
           
@@ -1981,7 +1981,10 @@ function showView(sh){
           var curStyle = isMe ? 'cursor:pointer;' : 'cursor:default;pointer-events:none;';
           tipsHtml += '<button class="tile nq-tip-tile '+(isMe?"me":"empty")+extraClass+'" style="background:'+bg+';color:'+col+';border:'+border+';'+curStyle+'" '+clickAttr+' title="'+esc(jur.name)+'"><div class="tile-value">'+txt+'</div></button>';
         }
-        mainStatsHtml = '<div class="tiles">'+tipsHtml+'</div>';
+        var vals2 = []; for(var j=0; j<S.jury.length; j++){ if(r[S.jury[j].id]) vals2.push(r[S.jury[j].id]); }
+        var sum2 = 0; for(var v=0; v<vals2.length; v++){ sum2 += vals2[v]; }
+        var avg2 = vals2.length ? sum2 / vals2.length : null;
+        mainStatsHtml = '<div class="tiles">'+tipsHtml+'</div><div class="avg"><b>'+(avg2==null?"–":avg2.toFixed(1))+'</b><small>AVG</small></div>';
       }
     } else {
       var vals = []; for(var j=0; j<S.jury.length; j++){ if(r[S.jury[j].id]) vals.push(r[S.jury[j].id]); }
@@ -2046,13 +2049,13 @@ function showView(sh){
   };
 
   // LTPK-Buchstaben exakt über den Kacheln ausgerichtet (AVG + Place eingerechnet)
-  var labHeaderLeft = '<div style="display:flex; gap:4px; margin-bottom:8px; justify-content:flex-end; padding-right:144px;">';
+  var labHeaderLeft = '<div style="display:flex; gap:4px; margin-bottom:8px; justify-content:flex-end; padding-right:140px;">';
   for(var j=0; j<S.jury.length; j++){
     labHeaderLeft += '<div class="tile-header-letter">'+esc(lab[j])+'</div>';
   }
   labHeaderLeft += '</div>';
 
-  var labHeaderRight = '<div style="display:flex; gap:4px; margin-bottom:8px; justify-content:flex-end; padding-right:144px;">';
+  var labHeaderRight = '<div style="display:flex; gap:4px; margin-bottom:8px; justify-content:flex-end; padding-right:140px;">';
   for(var j=0; j<S.jury.length; j++){
     labHeaderRight += '<div class="tile-header-letter">'+esc(lab[j])+'</div>';
   }
