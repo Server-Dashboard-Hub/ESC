@@ -79,14 +79,30 @@ body{
   100% { background-position: 200% center; }
 }
 
-/* NEW: Live Mode Jury Box Flash */
+/* Live Mode Jury Box Flash — flash the WHOLE box */
 @keyframes liveBoxFlash {
-  0% { border-color: var(--gold); box-shadow: 0 0 0 0 rgba(255,209,102,0.8), inset 0 0 20px rgba(255,209,102,0.4); transform: scale(1); }
-  30% { border-color: #fff6cc; box-shadow: 0 0 30px 8px rgba(255,209,102,1), inset 0 0 30px rgba(255,209,102,0.6); transform: scale(1.06); }
-  60% { border-color: var(--gold); box-shadow: 0 0 20px 4px rgba(255,209,102,0.6), inset 0 0 15px rgba(255,209,102,0.3); transform: scale(1.02); }
-  100% { border-color: var(--line); box-shadow: none; transform: scale(1); }
+  0% { box-shadow: 0 0 0 0 rgba(255,209,102,0.9); transform: scale(1); }
+  30% { box-shadow: 0 0 36px 12px rgba(255,209,102,1); transform: scale(1.07); }
+  60% { box-shadow: 0 0 22px 5px rgba(255,209,102,0.6); transform: scale(1.02); }
+  100% { box-shadow: none; transform: scale(1); }
 }
 .live-box-flash { animation: liveBoxFlash 1.4s ease-out; }
+
+/* NEW: Song change animation (when next/prev in live mode) */
+@keyframes liveSongChange {
+  0%   { opacity: 0; transform: translateY(-18px) scale(0.96); filter: blur(6px); }
+  50%  { opacity: 1; transform: translateY(4px) scale(1.02); filter: blur(0); }
+  100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+.live-song-change { animation: liveSongChange 0.65s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+/* NEW: Queue item pop when changing */
+@keyframes queuePop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.12); box-shadow: 0 0 24px rgba(255,209,102,0.9); }
+  100% { transform: scale(1); box-shadow: none; }
+}
+.queue-pop { animation: queuePop 0.5s ease-out; }
 
 .flash-update { animation: flashUpdate 1.4s ease-out; }
 
@@ -343,7 +359,6 @@ h3{font-family:var(--display);margin:0 0 12px;font-weight:700;letter-spacing:-0.
 }
 .tile.empty{background:var(--panel2-solid);color:var(--muted)}
 
-/* AQ Tile (Auto Qualifier) - Blue */
 .tile.aq-tile{
   background:linear-gradient(135deg, #2563eb, #1d4ed8) !important;
   color:#fff;
@@ -583,6 +598,60 @@ dialog input,dialog select{width:100%}
   opacity:0.06;filter:blur(2px);
   pointer-events:none;
 }
+
+/* NEW: Live jury box — the whole box gets the color background */
+.live-jury-box {
+  flex: 1;
+  min-width: 110px;
+  border-radius: 16px;
+  padding: 18px 12px;
+  text-align: center;
+  border: 2.5px solid var(--line);
+  transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+  position: relative;
+  overflow: hidden;
+}
+.live-jury-box .jury-name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.live-jury-box .live-big-number {
+  font-family: var(--number-font);
+  font-size: 3rem;
+  letter-spacing: 0.03em;
+  display: inline-block;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: 10px;
+}
+.live-jury-box.editable {
+  cursor: pointer;
+}
+.live-jury-box.editable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+}
+.live-jury-box.editable:active {
+  transform: scale(0.97);
+}
+.live-jury-box .place-badge {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  background: rgba(0,0,0,0.4);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+.live-jury-box .place-badge.gold   { background: linear-gradient(135deg,#ffd166,#ffae00); color:#1d1d1d; border-color:#fff6cc; }
+.live-jury-box .place-badge.silver { background: linear-gradient(135deg,#e5e5e5,#a3a3a3); color:#1d1d1d; border-color:#fff; }
+.live-jury-box .place-badge.bronze { background: linear-gradient(135deg,#e5a56b,#cd7f32); color:#1d1d1d; border-color:#f5c896; }
 
 .live-queue-grid{
   display:flex;gap:10px;overflow-x:auto;padding-bottom:12px;
@@ -923,9 +992,9 @@ var S=load();
 var me=localStorage.getItem(MEKEY)||"admin";
 var ui={big:null,q:"",view:"home",yearId:null,tab:"sf1",subTab:"points",sortMode:"order",ovSubTab:"semis",sbShow:"final",editMode:false,assign:null,editSong:null,libYear:"",libSort:"name",compareCc:null,enter:false};
 
-var _lastSnapshot = {}; // for detecting changes to flash
+var _lastSnapshot = {};
+var _lastLiveIndex = null; // For detecting index change to animate
 
-// NEW: Temporary state for modal (doesn't get saved until "Fertig")
 var _modalTempRating = null;
 var _modalTempEntryId = null;
 var _modalTempJurId = null;
@@ -1051,7 +1120,6 @@ function pull(first){
       var a=document.activeElement;
       if(first!==true&&(dlg.open||(a&&/INPUT|SELECT|TEXTAREA/.test(a.tagName))))return;
       
-      // Detect changed keys for flash animation
       var changedKeys = [];
       for(var k in f){ if(f[k] !== lastFlat[k]) changedKeys.push(k); }
       
@@ -1060,27 +1128,21 @@ function pull(first){
       try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}
       render();
       
-      // Apply flash to changed values
       if(changedKeys.length > 0) applyFlashChanges(changedKeys);
     }).catch(function(){net="error";});
   });
 }
 
 function applyFlashChanges(changedKeys){
-  // For each changed rating/pred key, find the corresponding DOM element and flash it
   var targetKeys = {};
   for(var i=0; i<changedKeys.length; i++){
     var k = changedKeys[i];
-    // ratings/songId/juryId
     var match = k.match(/^ratings\/([^\/]+)\/([^\/]+)$/);
     if(match){ targetKeys['rating_' + match[1] + '_' + match[2]] = true; }
     var match2 = k.match(/^pred\/([^\/]+)\/([^\/]+)$/);
     if(match2){ targetKeys['pred_' + match2[1] + '_' + match2[2]] = true; }
-    var match3 = k.match(/^liveState\/([^\/]+)\//);
-    if(match3){ targetKeys['live_' + match3[1]] = true; }
   }
   
-  // Flash all tiles with data-flash-key
   var tiles = document.querySelectorAll('[data-flash-key]');
   for(var i=0; i<tiles.length; i++){
     var key = tiles[i].getAttribute('data-flash-key');
@@ -1090,7 +1152,6 @@ function applyFlashChanges(changedKeys){
     }
   }
   
-  // NEW: Flash live-mode jury boxes if present
   var liveBoxes = document.querySelectorAll('[data-live-flash-key]');
   for(var i=0; i<liveBoxes.length; i++){
     var key = liveBoxes[i].getAttribute('data-live-flash-key');
@@ -1308,6 +1369,7 @@ function liveModeView(sh){
   var currentEntry = list[liveIdx];
   var s = songById(currentEntry.songId);
   var r = getRatings(currentEntry);
+  var place = currentEntry.place;
 
   var queueHtml = '';
   for(var i=0; i<list.length; i++){
@@ -1325,16 +1387,39 @@ function liveModeView(sh){
     var jur = S.jury[j], val = r[jur.id];
     var isMe = (jur.id === me) || (me === "admin" && jur.id === "j3");
     var displayVal = (val!==undefined&&val!==null) ? val : '–';
-    var clickAttr = isMe ? 'data-act="openPick" data-e="'+currentEntry.id+'" data-jur="'+jur.id+'" title="Punkte ändern"' : '';
-    var curStyle = isMe ? 'cursor:pointer;' : 'cursor:default;pointer-events:none;';
     
-    // NEW: flash key on the whole box, not just the number
+    // NEW: Apply pc() color style to the WHOLE box, not just the number
+    var boxStyle = '';
+    var numStyle = '';
+    if (val !== undefined && val !== null) {
+      var colorStyle = pc(val);
+      // pc returns a string like "background:rgb(..);color:#fff;..."
+      boxStyle = colorStyle.replace(/;color:[^;]+;?/g, ';'); // strip color, we'll keep border black-ish
+      // For the number, keep original color logic
+      numStyle = colorStyle;
+    }
+    
+    // Place badge
+    var placeBadge = '';
+    if (place !== undefined && place !== null && place !== '') {
+      var pNum = parseInt(place);
+      var badgeClass = '';
+      if (pNum === 1) badgeClass = 'gold';
+      else if (pNum === 2) badgeClass = 'silver';
+      else if (pNum === 3) badgeClass = 'bronze';
+      placeBadge = '<div class="place-badge '+badgeClass+'">'+ (pNum === 1 ? '🥇 ' : pNum === 2 ? '🥈 ' : pNum === 3 ? '🥉 ' : '') + 'Platz ' + pNum + '</div>';
+    }
+    
+    var clickAttr = isMe ? 'data-act="openPick" data-e="'+currentEntry.id+'" data-jur="'+jur.id+'" title="Punkte ändern"' : '';
+    var editableClass = isMe ? ' editable' : '';
+    
     var flashKey = currentEntry.songId ? 'rating_'+currentEntry.songId+'_'+jur.id : '';
     var flashAttr = flashKey ? 'data-live-flash-key="'+flashKey+'"' : '';
     
-    juryRatingBox += '<div class="live-jury-box" '+flashAttr+' style="background:var(--panel2-solid);border:2.5px solid var(--line);border-radius:16px;padding:20px 12px;text-align:center;flex:1;min-width:100px;transition:border-color 0.2s ease, box-shadow 0.2s ease;">' +
-      '<div style="font-size:0.8rem;font-weight:700;color:var(--muted);margin-bottom:12px;letter-spacing:0.05em;text-transform:uppercase;">'+esc(jur.name)+'</div>' +
-      '<div class="live-big-number" '+clickAttr+' style="font-size:2.8rem;'+(val?pc(val):'')+';padding:6px 12px;border-radius:12px;'+curStyle+'">'+displayVal+'</div>' +
+    juryRatingBox += '<div class="live-jury-box'+editableClass+'" '+clickAttr+' '+flashAttr+' style="'+boxStyle+'">' +
+      '<div class="jury-name" style="color:'+(val ? '#fff' : 'var(--muted)')+';">'+esc(jur.name)+'</div>' +
+      '<div class="live-big-number" style="'+numStyle+'">'+displayVal+'</div>' +
+      placeBadge +
     '</div>';
   }
 
@@ -1350,6 +1435,13 @@ function liveModeView(sh){
     : '<div style="flex:1;text-align:center;padding:14px;"><h3>Startnummer '+(liveIdx+1)+'</h3><p class="empty" style="margin:4px 0 14px">Kein Song zugewiesen.</p><button class="primary" data-act="pick" data-e="'+currentEntry.id+'">＋ Song hinzufügen</button></div>';
 
   var liveFlagUrl = s ? 'https://flagcdn.com/'+s.cc+'.svg' : '';
+  
+  // Detect if index changed to trigger animation
+  var animClass = '';
+  if (_lastLiveIndex !== null && _lastLiveIndex !== liveIdx) {
+    animClass = ' live-song-change';
+  }
+  _lastLiveIndex = liveIdx;
 
   return '<div class="live-mode-banner">' +
     '<div class="live-header">' +
@@ -1359,7 +1451,7 @@ function liveModeView(sh){
         '<button data-act="nextLive" style="background:var(--panel2-solid);color:#fff;font-weight:600;">Nächster ▶</button>' +
       '</div>' +
     '</div>' +
-    '<div class="live-current-card" style="--live-flag-url:url(\''+liveFlagUrl+'\')">' + currentSongDisplay + '</div>' +
+    '<div class="live-current-card'+animClass+'" style="--live-flag-url:url(\''+liveFlagUrl+'\')">' + currentSongDisplay + '</div>' +
     '<div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap;">'+juryRatingBox+'</div>' +
   '</div>' +
   '<h3 style="margin-bottom:12px;">Running Order</h3>' +
@@ -1406,7 +1498,6 @@ function overviewTab(){
       pts += '</div>';
       var out = e.dq; var pl = e.place ? '<span class="ov-place">'+e.place+'.</span>' : '<span class="ov-place">–</span>';
       var pill = s ? '<span class="ov-pill'+(out?" out":"")+'"><div class="song-info">'+flag(s.cc)+'<span><b>'+esc(s.title)+'</b></span></div></span>' : '<span class="ov-pill out"><div class="song-info"><span>–</span></div></span>';
-      
       rowsOv += '<div class="ov-row-item">' + pts + pill + '<div style="flex-grow:1"></div>' + pl + '</div>';
     }
     return '<h2>Overview</h2><p class="hint">Everyone\'s points side by side. Disqualified or non-qualifying countries are greyed out.</p>' +
@@ -1422,7 +1513,6 @@ function overviewTab(){
       pts += '</div>';
       var out = (e.place && e.place>10) || e.dq; var pl = e.place ? '<span class="ov-place">'+e.place+'.</span>' : '<span class="ov-place">–</span>';
       var pill = s ? '<span class="ov-pill'+(out?" out":"")+'"><div class="song-info">'+flag(s.cc)+'<span><b>'+esc(s.title)+'</b></span></div></span>' : '<span class="ov-pill out"><div class="song-info"><span>–</span></div></span>';
-      
       if(isMirror){ 
         rows += '<div class="ov-row-item"><div style="flex-grow:1"></div>'+pl+pill+pts+'</div>'; 
       } else { 
@@ -1945,9 +2035,6 @@ function openSong(id,assign){
   }, 50);
 }
 
-/* ─────────────────────────────────────────────────────────────
-   RATING MODAL — with TEMP state (save only on "Fertig")
-   ───────────────────────────────────────────────────────────── */
 function openDetailModal(eId, jurId){
   var e = findEntry(eId); if(!e) return;
   var s = songById(e.songId), r = getRatings(e);
@@ -1963,7 +2050,6 @@ function openDetailModal(eId, jurId){
   var val = r[activeJuryId];
   var activeName = jname(activeJuryId);
 
-  // NEW: Initialize temp state
   _modalTempRating = (val !== undefined && val !== null) ? val : null;
   _modalTempEntryId = eId;
   _modalTempJurId = activeJuryId;
@@ -1972,7 +2058,7 @@ function openDetailModal(eId, jurId){
     var displayVal = _modalTempRating;
     var row1="", row2="";
     for(var p=1; p<=10; p++){
-      var bHtml = '<button class="rate-modal-btn" style="'+pc(p)+';width:52px;height:56px;font-family:var(--number-font);font-size:1.7rem;border-radius:14px;border:3px solid '+(displayVal===p?'#fff':'transparent')+';cursor:pointer;display:grid;place-items:center;padding:0;'+(displayVal===p?'box-shadow:0 0 16px rgba(255,255,255,0.35);':'')+'" data-act="rateModalTemp" data-p="'+p+'">'+p+'</button>';
+      var bHtml = '<button class="rate-modal-btn" style="'+pc(p)+';width:60px;height:64px;font-family:var(--number-font);font-size:2rem;border-radius:14px;border:3px solid '+(displayVal===p?'#fff':'transparent')+';cursor:pointer;display:grid;place-items:center;padding:0;'+(displayVal===p?'box-shadow:0 0 16px rgba(255,255,255,0.35);':'')+'" data-act="rateModalTemp" data-p="'+p+'">'+p+'</button>';
       if(p<=5) row1+=bHtml; else row2+=bHtml;
     }
 
@@ -1982,8 +2068,8 @@ function openDetailModal(eId, jurId){
       '<p style="color:var(--gold);margin:6px 0 0;font-size:0.85rem;font-weight:700;letter-spacing:0.05em;">'+esc(activeName)+'</p></div>' +
     '<div style="background:var(--panel2-solid);border:1px solid var(--line);border-radius:18px;padding:22px;text-align:center;margin-bottom:18px;">' +
       '<div style="font-family:var(--number-font);font-size:2.2rem;color:var(--gold);margin-bottom:18px;letter-spacing:0.02em;">'+(displayVal!==null&&displayVal!==undefined?displayVal+' / 10 Pts':'– Pts')+'</div>' +
-      '<div style="display:flex;gap:8px;justify-content:center;margin-bottom:12px;">'+row1+'</div>' +
-      '<div style="display:flex;gap:8px;justify-content:center;">'+row2+'</div>' +
+      '<div style="display:flex;gap:8px;justify-content:center;margin-bottom:12px;flex-wrap:wrap;">'+row1+'</div>' +
+      '<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">'+row2+'</div>' +
     '</div>' +
     '<div class="actions" style="margin-top:16px;justify-content:flex-end;">' +
       '<button class="primary" data-act="saveRatingAndClose">Fertig</button></div>';
@@ -1994,41 +2080,34 @@ function openDetailModal(eId, jurId){
   if(!dlg.open) dlg.showModal();
 }
 
-// NEW: Handle temp rating click (doesn't save yet)
 function handleTempRate(p) {
   if (_modalTempRating === p) {
-    _modalTempRating = null; // Toggle off
+    _modalTempRating = null;
   } else {
     _modalTempRating = p;
   }
-  // Re-render modal body only
-  var modalBody = dlg.querySelector('.rate-modal-btn');
-  if (modalBody) {
-    // Full re-render for simplicity
-    var e = findEntry(_modalTempEntryId);
-    var s = songById(e.songId);
-    var activeName = jname(_modalTempJurId);
-    var displayVal = _modalTempRating;
-    var row1="", row2="";
-    for(var pp=1; pp<=10; pp++){
-      var bHtml = '<button class="rate-modal-btn" style="'+pc(pp)+';width:52px;height:56px;font-family:var(--number-font);font-size:1.7rem;border-radius:14px;border:3px solid '+(displayVal===pp?'#fff':'transparent')+';cursor:pointer;display:grid;place-items:center;padding:0;'+(displayVal===pp?'box-shadow:0 0 16px rgba(255,255,255,0.35);':'')+'" data-act="rateModalTemp" data-p="'+pp+'">'+pp+'</button>';
-      if(pp<=5) row1+=bHtml; else row2+=bHtml;
-    }
-    dlg.innerHTML = '<div style="text-align:center;margin-bottom:18px;">' +
-      '<div style="margin-bottom:10px;transform:scale(1.6);display:inline-block;">'+flag(s.cc)+'</div>' +
-      '<h2 style="margin:8px 0 4px;font-size:1.6rem;">'+esc(s.title)+'</h2><p style="color:var(--muted);margin:0;font-size:1rem;">'+esc(s.artist)+' · '+esc(CN[s.cc]||s.cc.toUpperCase())+'</p>' +
-      '<p style="color:var(--gold);margin:6px 0 0;font-size:0.85rem;font-weight:700;letter-spacing:0.05em;">'+esc(activeName)+'</p></div>' +
-    '<div style="background:var(--panel2-solid);border:1px solid var(--line);border-radius:18px;padding:22px;text-align:center;margin-bottom:18px;">' +
-      '<div style="font-family:var(--number-font);font-size:2.2rem;color:var(--gold);margin-bottom:18px;letter-spacing:0.02em;">'+(displayVal!==null&&displayVal!==undefined?displayVal+' / 10 Pts':'– Pts')+'</div>' +
-      '<div style="display:flex;gap:8px;justify-content:center;margin-bottom:12px;">'+row1+'</div>' +
-      '<div style="display:flex;gap:8px;justify-content:center;">'+row2+'</div>' +
-    '</div>' +
-    '<div class="actions" style="margin-top:16px;justify-content:flex-end;">' +
-      '<button class="primary" data-act="saveRatingAndClose">Fertig</button></div>';
+  var e = findEntry(_modalTempEntryId);
+  var s = songById(e.songId);
+  var activeName = jname(_modalTempJurId);
+  var displayVal = _modalTempRating;
+  var row1="", row2="";
+  for(var pp=1; pp<=10; pp++){
+    var bHtml = '<button class="rate-modal-btn" style="'+pc(pp)+';width:60px;height:64px;font-family:var(--number-font);font-size:2rem;border-radius:14px;border:3px solid '+(displayVal===pp?'#fff':'transparent')+';cursor:pointer;display:grid;place-items:center;padding:0;'+(displayVal===pp?'box-shadow:0 0 16px rgba(255,255,255,0.35);':'')+'" data-act="rateModalTemp" data-p="'+pp+'">'+pp+'</button>';
+    if(pp<=5) row1+=bHtml; else row2+=bHtml;
   }
+  dlg.innerHTML = '<div style="text-align:center;margin-bottom:18px;">' +
+    '<div style="margin-bottom:10px;transform:scale(1.6);display:inline-block;">'+flag(s.cc)+'</div>' +
+    '<h2 style="margin:8px 0 4px;font-size:1.6rem;">'+esc(s.title)+'</h2><p style="color:var(--muted);margin:0;font-size:1rem;">'+esc(s.artist)+' · '+esc(CN[s.cc]||s.cc.toUpperCase())+'</p>' +
+    '<p style="color:var(--gold);margin:6px 0 0;font-size:0.85rem;font-weight:700;letter-spacing:0.05em;">'+esc(activeName)+'</p></div>' +
+  '<div style="background:var(--panel2-solid);border:1px solid var(--line);border-radius:18px;padding:22px;text-align:center;margin-bottom:18px;">' +
+    '<div style="font-family:var(--number-font);font-size:2.2rem;color:var(--gold);margin-bottom:18px;letter-spacing:0.02em;">'+(displayVal!==null&&displayVal!==undefined?displayVal+' / 10 Pts':'– Pts')+'</div>' +
+    '<div style="display:flex;gap:8px;justify-content:center;margin-bottom:12px;flex-wrap:wrap;">'+row1+'</div>' +
+    '<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">'+row2+'</div>' +
+  '</div>' +
+  '<div class="actions" style="margin-top:16px;justify-content:flex-end;">' +
+    '<button class="primary" data-act="saveRatingAndClose">Fertig</button></div>';
 }
 
-// NEW: Save the temp rating to state, then close
 function saveRatingAndClose() {
   if (_modalTempEntryId && _modalTempJurId) {
     var e = findEntry(_modalTempEntryId);
@@ -2159,6 +2238,7 @@ var A={
       if (!y.shows[ui.tab]) {
         ui.tab = y.shows.sf1 ? "sf1" : (y.shows.sf2 ? "sf2" : (y.shows.final ? "final" : "overview"));
       }
+      _lastLiveIndex = null;
     }
     save(); render();
   },
@@ -2167,6 +2247,11 @@ var A={
     var idxVal = parseInt(t.dataset.idx)||0;
     S.liveState[ui.yearId] = S.liveState[ui.yearId] || {active: true, index: 0};
     S.liveState[ui.yearId].index = idxVal; save(); render();
+    // Trigger queue pop animation
+    setTimeout(function(){
+      var active = document.querySelector('.live-queue-item.active');
+      if(active){ active.classList.add('queue-pop'); setTimeout(function(){ active.classList.remove('queue-pop'); }, 500); }
+    }, 50);
   },
   nextLive:function(){
     if(!ui.yearId) return; var y=yearObj(ui.yearId), l=y.shows[ui.tab]||[];
@@ -2202,14 +2287,12 @@ var A={
   tab:function(t){ui.tab=t.dataset.tab;ui.subTab="points";ui.sortMode="order";ui.ovSubTab="semis";ui.editMode=false;ui.enter=true; render();},
   openPick:function(t){ openRatingModal(t.dataset.e, t.dataset.jur || me); return "keep"; },
   
-  // NEW: Temp rating click - only updates modal display
   rateModalTemp:function(t){
     var p = +t.dataset.p;
     handleTempRate(p);
     return "keep";
   },
   
-  // NEW: Save & close
   saveRatingAndClose:function(){
     saveRatingAndClose();
     return "keep";
@@ -2288,7 +2371,6 @@ var A={
   },
   saveCity:function(){ var y=yearObj(ui.yearId), inp=$("#city_input"), ccInp=$("#f_city_cc"); if(y&&inp){ y.city=inp.value.trim()||undefined; y.hostCc=ccInp.value||undefined; save(); } dlg.close(); render(); },
   closeDlg:function(){
-    // If modal is open with unsaved temp rating, just discard it
     _modalTempRating = null; _modalTempEntryId = null; _modalTempJurId = null;
     dlg.close();return "keep";
   }, 
