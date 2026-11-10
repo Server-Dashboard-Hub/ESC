@@ -1428,10 +1428,18 @@ function findEntry(id){
   }
 }
 
-var flag=function(cc){return '<img class="flag" data-cc="'+cc+'" src="https://flagcdn.com/'+cc+'.svg" alt="'+cc.toUpperCase()+'" loading="lazy" onerror="flagFb(this)">';};
+// Flaggen: kleine PNGs statt SVG (deutlich kleinerer Download, Browser-cached)
+// width/height gesetzt -> kein Layout-Shift, kein doppelter Request
+var flag=function(cc){
+  return '<img class="flag" data-cc="'+cc+'" '+
+    'src="https://flagcdn.com/w40/'+cc+'.png" '+
+    'srcset="https://flagcdn.com/w40/'+cc+'.png 1x, https://flagcdn.com/w80/'+cc+'.png 2x" '+
+    'width="22" height="15" alt="'+cc.toUpperCase()+'" '+
+    'loading="lazy" decoding="async" onerror="flagFb(this)">';
+};
 function flagFb(i){
   var cc=i.dataset.cc;
-  if(!i.dataset.s){i.dataset.s=1;i.removeAttribute("srcset");i.src="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.2.3/flags/4x3/"+cc+".svg";return;}
+  if(!i.dataset.s){i.dataset.s=1;i.removeAttribute("srcset");i.src="https://flagcdn.com/w40/"+cc+".png";return;}
   var sp=document.createElement("span"); var chars = cc.toUpperCase().split(""); var text = "";
   for(var k=0; k<chars.length; k++){ text += String.fromCodePoint(127397 + chars[k].charCodeAt(0)); }
   sp.textContent = text + " "; i.replaceWith(sp);
@@ -1729,7 +1737,7 @@ function liveModeView(sh){
     '</div>'
     : '<div style="flex:1;text-align:center;padding:14px;"><h3>Startnummer '+(liveIdx+1)+'</h3><p class="empty" style="margin:4px 0 14px">Kein Song zugewiesen.</p><button class="primary" data-act="pick" data-e="'+currentEntry.id+'">＋ Song hinzufügen</button></div>';
 
-  var liveFlagUrl = s ? 'https://flagcdn.com/'+s.cc+'.svg' : '';
+  var liveFlagUrl = s ? 'https://flagcdn.com/w80/'+s.cc+'.png' : '';
 
   return '<div class="live-mode-banner">' +
     '<div class="live-header">' +
