@@ -206,6 +206,14 @@ h3{font-family:var(--display);margin:0 0 12px;font-weight:700;letter-spacing:-0.
   cursor:pointer;display:flex;flex-direction:column;gap:6px;
   padding:26px;min-height:140px;justify-content:center;
   transition:transform 0.2s ease-out, box-shadow 0.2s ease-out, border-color 0.2s ease-out;
+  /* Edler, dunklerer Hintergrund */
+  background: linear-gradient(145deg, rgba(30,18,60,0.95) 0%, rgba(15,8,32,0.98) 100%) !important;
+  border: 1px solid rgba(168,85,247,0.15) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 8px 24px rgba(0,0,0,0.4) !important;
+}
+.yearcard:hover {
+  border-color: rgba(255,45,149,0.4) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 12px 32px rgba(0,0,0,0.6), 0 0 20px rgba(255,45,149,0.15) !important;
 }
 .yearcard:hover{
   transform:translateY(-4px);
@@ -257,10 +265,13 @@ h3{font-family:var(--display);margin:0 0 12px;font-weight:700;letter-spacing:-0.
 .row{
   position:relative;overflow:hidden;
   display:grid;grid-template-columns:38px 1fr auto;gap:14px;
-  background:var(--panel);border:1px solid var(--line);
+  /* Edler, dunkler Hintergrund */
+  background: linear-gradient(135deg, rgba(25,14,52,0.95) 0%, rgba(12,6,28,0.98) 100%) !important;
+  border:1px solid rgba(94,58,168,0.25);
   border-radius:var(--r-md);padding:12px 14px;align-items:center;
   animation: fadeUp 0.25s ease-out backwards;
   transition: border-color 0.15s ease-out, box-shadow 0.15s ease-out;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.03);
 }
 .row:hover{
   border-color:var(--line-strong);
@@ -270,9 +281,11 @@ h3{font-family:var(--display);margin:0 0 12px;font-weight:700;letter-spacing:-0.
   content: "";position: absolute;left: 0;top: 0;bottom: 0;width: 240px;
   background-image: var(--flag-url);
   background-size: cover;background-position: center;
-  opacity: 0.85;
-  mask-image: linear-gradient(to right, rgba(0,0,0,1) 35%, rgba(0,0,0,0) 100%);
-  -webkit-mask-image: linear-gradient(to right, rgba(0,0,0,1) 35%, rgba(0,0,0,0) 100%);
+  /* Dunkler und dezenter, damit der edle Look bleibt */
+  opacity: 0.35 !important;
+  filter: brightness(0.6) saturate(0.8);
+  mask-image: linear-gradient(to right, rgba(0,0,0,1) 15%, rgba(0,0,0,0) 100%);
+  -webkit-mask-image: linear-gradient(to right, rgba(0,0,0,1) 15%, rgba(0,0,0,0) 100%);
   pointer-events: none;z-index: 0;
 }
 .row > * { position: relative; z-index: 1; }
@@ -383,18 +396,19 @@ h3{font-family:var(--display);margin:0 0 12px;font-weight:700;letter-spacing:-0.
 /* NEU: Der Buchstabe oben drüber, in hübschen Boxen */
 .tile-header-letter {
   width: 46px;
-  height: 24px;
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--body);
-  font-weight: 900;
-  font-size: 0.8rem;
-  color: var(--gold);
-  background: rgba(255,209,102,0.1);
-  border: 1px solid rgba(255,209,102,0.3);
-  border-radius: 8px;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 0.72rem;
+  color: var(--muted);
+  background: rgba(5,3,15,0.6);
+  border: 1px solid rgba(94,58,168,0.4);
+  border-radius: 6px;
   letter-spacing: 0.05em;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
 }
 /* Zahl bleibt exakt mittig */
 .tile-value {
@@ -780,16 +794,24 @@ dialog input,dialog select{width:100%}
   display:flex;gap:10px;overflow-x:auto;padding-bottom:12px;
 }
 .live-queue-item{
-  background:var(--panel2-solid);border:1px solid var(--line);
+  /* Edler, dunkler Hintergrund */
+  background: linear-gradient(135deg, rgba(25,14,52,0.95) 0%, rgba(12,6,28,0.98) 100%);
+  border:1px solid rgba(94,58,168,0.3);
   border-radius:12px;padding:10px 14px;
   min-width:150px;cursor:pointer;flex-shrink:0;
-  transition:border-color 0.15s ease, background-color 0.15s ease;
+  transition:all 0.15s ease;
   position:relative;overflow:hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
-.live-queue-item:hover{border-color:var(--pink);background:rgba(255,45,149,0.06)}
+.live-queue-item:hover{
+  border-color:var(--pink);
+  background: linear-gradient(135deg, rgba(35,20,70,1) 0%, rgba(18,9,40,1) 100%);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+}
 .live-queue-item.active{
   border-color:var(--gold);
-  background:linear-gradient(135deg, rgba(255,209,102,0.08) 0%, var(--panel-solid) 100%);
+  background: linear-gradient(135deg, rgba(45,28,85,1) 0%, rgba(22,13,46,1) 100%);
+  box-shadow: 0 0 16px rgba(255,209,102,0.15), inset 0 1px 0 rgba(255,255,255,0.1);
 }
 .live-queue-item.active::before{
   content:"";position:absolute;top:0;left:0;bottom:0;width:4px;
@@ -1737,7 +1759,7 @@ function liveModeView(sh){
     '</div>'
     : '<div style="flex:1;text-align:center;padding:14px;"><h3>Startnummer '+(liveIdx+1)+'</h3><p class="empty" style="margin:4px 0 14px">Kein Song zugewiesen.</p><button class="primary" data-act="pick" data-e="'+currentEntry.id+'">＋ Song hinzufügen</button></div>';
 
-  var liveFlagUrl = s ? 'https://flagcdn.com/w80/'+s.cc+'.png' : '';
+  var liveFlagUrl = s ? 'https://flagcdn.com/'+s.cc+'.svg' : '';
 
   return '<div class="live-mode-banner">' +
     '<div class="live-header">' +
@@ -2024,14 +2046,14 @@ function showView(sh){
       '<div style="display:flex;align-items:center;gap:12px"><div class="stats">'+mainStatsHtml+'</div>'+placeInputHtml+'</div></div>';
   };
 
-  // LTPK-Buchstaben horizontal, direkt unter den Bewertungskacheln (in einer Spalte)
-  var labHeaderLeft = '<div style="display:flex; gap:4px; margin-bottom:8px; justify-content:flex-end; padding-right:54px;">';
+  // LTPK-Buchstaben exakt über den Kacheln ausgerichtet (AVG + Place eingerechnet)
+  var labHeaderLeft = '<div style="display:flex; gap:4px; margin-bottom:8px; justify-content:flex-end; padding-right:128px;">';
   for(var j=0; j<S.jury.length; j++){
     labHeaderLeft += '<div class="tile-header-letter">'+esc(lab[j])+'</div>';
   }
   labHeaderLeft += '</div>';
 
-  var labHeaderRight = '<div style="display:flex; gap:4px; margin-bottom:8px; justify-content:flex-end; padding-right:54px;">';
+  var labHeaderRight = '<div style="display:flex; gap:4px; margin-bottom:8px; justify-content:flex-end; padding-right:128px;">';
   for(var j=0; j<S.jury.length; j++){
     labHeaderRight += '<div class="tile-header-letter">'+esc(lab[j])+'</div>';
   }
