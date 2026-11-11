@@ -260,6 +260,32 @@ h3{font-family:var(--display);margin:0 0 12px;font-weight:700;letter-spacing:-0.
   background:linear-gradient(135deg, #fff 0%, #f0e8ff 100%);
   color:var(--bg);border-color:transparent;font-weight:800;
 }
+/* Edles Design für die speziellen Slider */
+.edle-slider {
+  background: linear-gradient(145deg, rgba(30,18,60,0.95) 0%, rgba(15,8,32,0.98) 100%) !important;
+  border: 1px solid rgba(94,58,168,0.4) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 4px 12px rgba(0,0,0,0.3) !important;
+}
+/* Glow Effekt für den aktiven Live-Tab */
+.tabs button.live-active {
+  border: 2px solid var(--red) !important;
+  background: linear-gradient(135deg, rgba(255,77,109,0.2) 0%, rgba(255,45,149,0.1) 100%) !important;
+  color: #fff !important;
+  box-shadow: 0 0 16px rgba(255,77,109,0.8), inset 0 0 10px rgba(255,77,109,0.4) !important;
+  animation: liveTabPulse 1.5s infinite alternate;
+  position: relative;
+  overflow: hidden;
+}
+.tabs button.live-active::after {
+  content: "";
+  position: absolute;
+  top: 0; left: -100%; width: 50%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  animation: liveTabShine 2.5s infinite;
+}
+@keyframes liveTabShine {
+  100% { left: 200%; }
+}
 /* Glow Effekt für den aktiven Live-Tab */
 .tabs button.live-active {
   border: 2px solid var(--red) !important;
@@ -477,7 +503,7 @@ h3{font-family:var(--display);margin:0 0 12px;font-weight:700;letter-spacing:-0.
 .actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
 
 table{width:100%;border-collapse:separate;border-spacing:0;}
-th,td{padding:6px 4px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+th,td{padding:4px 4px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
 th{
   color:var(--muted);font-weight:600;font-size:.78rem;
   letter-spacing:0.05em;text-transform:uppercase;
@@ -747,6 +773,12 @@ dialog input,dialog select{width:100%}
   opacity:0.35;
   pointer-events:none;
   z-index: 0;
+  /* NEU: Fading-Effekt für den Live-Modus */
+  animation: liveFlagFade 6s infinite alternate;
+}
+@keyframes liveFlagFade {
+  0% { opacity: 0.15; transform: scale(1); }
+  100% { opacity: 0.45; transform: scale(1.02); }
 }
 
 /* NEU: Platz-Badge oben im Banner */
@@ -938,17 +970,13 @@ dialog input,dialog select{width:100%}
 /* ── Battle Rows ── */
 .battle-row {
   position: relative;
-  overflow: hidden;
   background: rgba(22,13,46,0.6);
   /* Dicke Trennlinie zwischen den Ländern */
   border-bottom: 3px solid rgba(94,58,168,0.4) !important;
 }
-.battle-row td { border-bottom: none !important; }
-.battle-row td {
-  border-bottom: none !important;
-}
+.battle-row td { border-bottom: none !important; position: relative; z-index: 1; }
 .battle-row::before {
-  content: "";position: absolute;left: 0;top: 0;bottom: 0;width: 100%;
+  content: "";position: absolute;left: 0;top: 0;bottom: 0;width: 180px; /* Nur links */
   background-image: var(--flag-url);
   background-size: cover;background-position: center;
   opacity: 0.85;
@@ -957,7 +985,6 @@ dialog input,dialog select{width:100%}
   pointer-events: none;z-index: 0;
 }
 .battle-row:hover { background: rgba(255,45,149,0.05); }
-.battle-row td { position: relative; z-index: 1; }
 
 /* ── Scoreboard (Table) ── */
 .sb-table {
@@ -1972,12 +1999,12 @@ function showView(sh){
 
   var topControls = "";
   if(sh !== "final"){
-    topControls = '<div class="tabs" style="border:none;margin:0;padding:4px;background:var(--panel2-solid);border-radius:999px;display:inline-flex;gap:4px">' +
+    topControls = '<div class="tabs edle-slider" style="border:none;margin:0;padding:4px;border-radius:999px;display:inline-flex;gap:4px">' +
       '<button class="'+(ui.subTab!=='tips'?'on':'')+'" style="border:none;margin:0" data-act="subTab" data-val="points">Points</button>' +
       '<button class="'+(ui.subTab==='tips'?'on':'')+'" style="border:none;margin:0" data-act="subTab" data-val="tips">NQ Tips</button>' +
     '</div>';
   }
-  var sortToggleBtn = '<div class="tabs" style="border:none;margin:0;padding:4px;background:var(--panel2-solid);border-radius:999px;display:inline-flex;gap:4px">' +
+  var sortToggleBtn = '<div class="tabs edle-slider" style="border:none;margin:0;padding:4px;border-radius:999px;display:inline-flex;gap:4px">' +
     '<button class="'+(ui.sortMode==='order'?'on':'')+'" style="border:none;margin:0" data-act="sortMode" data-val="order">Order</button>' +
     '<button class="'+(ui.sortMode==='place'?'on':'')+'" style="border:none;margin:0" data-act="sortMode" data-val="place">Placement</button>' +
   '</div>';
@@ -2103,7 +2130,7 @@ function showView(sh){
   };
 
   // LTPK-Buchstaben exakt über den Kacheln ausgerichtet (AVG + Place eingerechnet)
-  var labHeaderLeft = '<div style="display:flex; gap:4px; margin-bottom:8px; justify-content:flex-end; padding-right:136px;">';
+  var labHeaderLeft = '<div style="display:flex; gap:4px; margin-bottom:8px; justify-content:flex-end; padding-right:138px;">';
   for(var j=0; j<S.jury.length; j++){
     labHeaderLeft += '<div class="tile-header-letter">'+esc(lab[j])+'</div>';
   }
@@ -2184,10 +2211,10 @@ function battle(){
     }
     var placeActStr = (act!==undefined&&act!==null)?act:"–";
     var rowStyle = (s && s.cc) ? ' style="--flag-url: url(\'https://flagcdn.com/' + s.cc + '.svg\')"' : '';
-    var ccBadge = (s && s.cc) ? '<div class="cc-code" style="position:static; transform:none; margin:0;">'+esc(getIso3(s.cc))+'</div>' : '';
+    var ccBadge = (s && s.cc) ? '<div class="cc-code" style="position:static; transform:none; margin:0; padding:2px 6px; font-size:0.65rem;">'+esc(getIso3(s.cc))+'</div>' : '';
     var songInfo = s ? '<div style="display:flex;flex-direction:column;"><b style="font-family:var(--display);font-size:0.85rem;color:var(--ink);line-height:1.1;">'+esc(s.title)+'</b><span style="font-size:0.7rem;color:var(--muted);">'+esc(s.artist)+'</span></div>' : '';
     
-    rows+='<tr class="battle-row" '+rowStyle+'><td style="min-width:110px; padding:6px 10px;"><div style="display:flex;align-items:center;gap:8px;">'+ccBadge+songInfo+'</div></td>'+guessCells+diffCells+'<td class="c" style="width:50px;"><b>'+placeActStr+'</b></td></tr>';
+    rows+='<tr class="battle-row" '+rowStyle+'><td style="padding:4px 8px; text-align:left; min-width:120px;"><div style="display:flex;align-items:center;gap:8px;justify-content:flex-start;">'+ccBadge+songInfo+'</div></td>'+guessCells+diffCells+'<td class="c" style="width:50px;"><b>'+placeActStr+'</b></td></tr>';
   }
 
   var rankings = [];
@@ -2280,14 +2307,13 @@ function scoreboard(){
   for(var i=0; i<rows.length; i++){
     var x = rows[i];
     
-    // Ranking-Logik (gleiche Punkte = gleicher Platz)
     if (ui.sbSort !== 'order') {
       if (i > 0 && x.avg !== rows[i-1].avg) {
         currentRank = i + 1;
       }
       var rank = currentRank;
     } else {
-      var rank = "-";
+      var rank = idx(x.e.id); 
     }
     
     var rankClass = rank === 1 ? ' sb-top1' : (rank === 2 ? ' sb-top2' : (rank === 3 ? ' sb-top3' : ''));
@@ -2297,25 +2323,38 @@ function scoreboard(){
     for(var j=0; j<S.jury.length; j++){
       var p = x.r[S.jury[j].id];
       if (p) {
-        // KEINE Animation für 10 im Scoreboard, gleiche Größe wie 1-9
-        var style = pc(p).replace(/animation:[^;]+;?/, '').replace(/box-shadow:[^;]+;?/, '').replace(/text-shadow:[^;]+;?/, '');
-        chips += '<span class="cell" style="'+style+'; display:inline-block; margin: 0 2px;">'+p+'</span>';
+        var style = pc(p);
+        if (Number(p) === 10) {
+          style = style.replace("width:46px;height:50px;", "").replace("border:2.5px solid #fff1c2;", "border:2.5px solid #fff1c2; font-size: 1.05rem;");
+        }
+        chips += '<span class="cell" style="'+style+'; display:inline-block; margin: 0 2px; font-size:1.05rem; width:34px; height:34px; line-height:30px; padding:0;">'+p+'</span>';
       } else {
-        chips += '<span class="cell" style="background:var(--panel2-solid);color:var(--muted-dim); display:inline-block; margin: 0 2px;">–</span>';
+        chips += '<span class="cell" style="background:var(--panel2-solid);color:var(--muted-dim); display:inline-block; margin: 0 2px; width:34px; height:34px; line-height:30px; padding:0;">–</span>';
       }
       
-      // NQ Tips
       var jQual = qp[S.jury[j].id];
       if (jQual === false) {
-        nqChips += '<span class="cell" style="background:rgba(255,77,109,0.2);color:#ffb3c1;border:1px solid rgba(255,77,109,0.4); display:inline-block; margin: 0 2px;font-size:0.85rem;padding:2px 6px;">NQ</span>';
+        nqChips += '<span class="cell" style="background:rgba(255,77,109,0.2);color:#ffb3c1;border:1px solid rgba(255,77,109,0.4); display:inline-block; margin: 0 2px;font-size:0.85rem;padding:2px 6px; width:34px; height:34px; line-height:30px;">NQ</span>';
       } else {
-        nqChips += '<span class="cell" style="background:transparent;border:1px dashed rgba(255,255,255,0.1);color:transparent; display:inline-block; margin: 0 2px;font-size:0.85rem;padding:2px 6px;">-</span>';
+        nqChips += '<span class="cell" style="background:transparent;border:1px dashed rgba(255,255,255,0.1);color:transparent; display:inline-block; margin: 0 2px;font-size:0.85rem;padding:2px 6px; width:34px; height:34px; line-height:30px;">-</span>';
       }
     }
     
-    var juryRowHtml = '<div style="display:flex;justify-content:center;margin-bottom:2px;">';
-    for(var j=0; j<S.jury.length; j++){ juryRowHtml += '<span style="width:24px;text-align:center;font-size:0.6rem;font-weight:800;color:var(--muted);">'+lab[j]+'</span>'; }
+    var juryRowHtml = '<div style="display:flex;justify-content:center;margin-bottom:4px;">';
+    for(var j=0; j<S.jury.length; j++){ juryRowHtml += '<span style="width:38px;text-align:center;font-size:0.6rem;font-weight:800;color:var(--muted);">'+lab[j]+'</span>'; }
     juryRowHtml += '</div>';
+    
+    var placeDisplay = x.place ? x.place + "." : "-";
+    if (sh === "all") {
+      var sfPlace = null;
+      if (y.shows.sf1) { var sf1e = y.shows.sf1.find(function(e){ return e.songId === x.s.id; }); if(sf1e && sf1e.place) sfPlace = sf1e.place; }
+      if (!sfPlace && y.shows.sf2) { var sf2e = y.shows.sf2.find(function(e){ return e.songId === x.s.id; }); if(sf2e && sf2e.place) sfPlace = sf2e.place; }
+      
+      var parts = [];
+      if (sfPlace) parts.push('<span style="font-size:0.65rem;color:var(--muted);">SF: '+sfPlace+'.</span>');
+      if (x.place) parts.push('<span style="font-size:0.75rem;font-weight:800;color:var(--gold);">GF: '+x.place+'.</span>');
+      if (parts.length) placeDisplay = '<div style="display:flex;flex-direction:column;align-items:center;gap:2px;line-height:1.1;">'+parts.join('')+'</div>';
+    }
 
     sbRows += '<tr class="'+rankClass+'">' +
       '<td class="sb-rank-cell">'+rank+'</td>' +
@@ -2332,13 +2371,13 @@ function scoreboard(){
       '<td style="text-align:center; vertical-align:middle;">' + nqChips + '</td>' +
       '<td class="sb-score-cell"><b>'+(x.avg==null?"–":x.sum)+'</b></td>' +
       '<td class="sb-score-cell"><b>'+(x.avg==null?"–":x.avg.toFixed(1))+'</b></td>' +
+      '<td style="text-align:center; width:50px;">' + placeDisplay + '</td>' +
     '</tr>';
   }
   
-  // Hole die LTPK Buchstaben für den Header
   var headerLTPK = ''; for(var j=0; j<S.jury.length; j++){ headerLTPK += '<span style="display:inline-block;width:26px;text-align:center;font-size:0.7rem;">'+lab[j]+'</span>'; }
   
-  var sortToggleBtn = '<div class="tabs" style="border:none;margin:0;padding:4px;background:var(--panel2-solid);border-radius:999px;display:inline-flex;gap:4px">' +
+  var sortToggleBtn = '<div class="tabs edle-slider" style="border:none;margin:0;padding:4px;border-radius:999px;display:inline-flex;gap:4px">' +
     '<button class="'+(ui.sbSort==='order'?'on':'')+'" style="border:none;margin:0" data-act="sbSort" data-val="order">Order</button>' +
     '<button class="'+(ui.sbSort==='place'?'on':'')+'" style="border:none;margin:0" data-act="sbSort" data-val="place">Placement</button>' +
   '</div>';
@@ -2347,7 +2386,7 @@ function scoreboard(){
     '<div><h2>Scoreboard</h2><p class="hint" style="margin:0;">Average points, highest first.</p></div>' +
     '<div>' + sortToggleBtn + '</div>' +
   '</div>'+switcher("sbShow")+
-  (rows.length?'<div class="tw"><table class="sb-table"><thead><tr><th class="c">#</th><th>Song</th><th class="c">Pts</th><th class="c">NQ</th><th class="c">Total</th><th class="c">Ø</th></tr></thead><tbody>'+sbRows+'</tbody></table></div>':'<p class="empty">Nothing to show yet.</p>');
+  (rows.length?'<div class="tw"><table class="sb-table"><thead><tr><th class="c">#</th><th>Song</th><th class="c">Pts</th><th class="c">NQ</th><th class="c">Total</th><th class="c">Ø</th><th class="c">Place</th></tr></thead><tbody>'+sbRows+'</tbody></table></div>':'<p class="empty">Nothing to show yet.</p>');
 }
 
 function compareView(){
@@ -2774,6 +2813,7 @@ var A={
     return "keep";
   },
   sbShow:function(t){ui.sbShow=t.dataset.show; render();},
+  sbSort:function(t){ui.sbSort=t.dataset.val; render();},
   sbSort:function(t){ui.sbSort=t.dataset.val; render();},
   saveNewYear:function(){
     var yNum=parseInt($("#ny_year").value), suffix=($("#ny_suffix").value||"").trim();
