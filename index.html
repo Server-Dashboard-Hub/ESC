@@ -506,9 +506,9 @@ table{width:100%;border-collapse:separate;border-spacing:0;}
 th,td{padding:4px 4px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
 /* Zwingt die erste Spalte im Battle auf die gleiche Breite wie die Datenzellen */
 .battle-table th:first-child { 
-  width: 140px !important; 
-  min-width: 140px !important; 
-  max-width: 140px !important; 
+  width: 180px !important; 
+  min-width: 180px !important; 
+  max-width: 180px !important; 
   display: table-cell !important;
 }
 th{
@@ -2109,6 +2109,8 @@ function showView(sh){
     var displayNo = (rawNo % 1 !== 0) ? '➔' : rawNo;
 
     var isOut = (sh !== "final" && e.place !== undefined && e.place !== null && e.place > 10);
+    // Im FINAL wird NIEMALS ausgegraut, außer der Song ist DQ
+    if (sh === "final") { isOut = false; }
     var rowClass = (e.place===1?" winner":"")+(isOut?" out":"")+(e.dq?" dq":"")+(sh !== "final" && isAutoFinal && e.place !== 1 ? " autofinal-row":"");
     // Zusätzliche Klasse für die Zeile, wenn es ein AQ ist
     if (sh !== "final" && isAutoFinal && !isOut) rowClass += " aq-row";
@@ -2172,7 +2174,12 @@ function switcher(key){
 function battle(){
   var y=yearObj(ui.yearId), allFin=y.shows.final || [];
   var fin = []; for(var i=0; i<allFin.length; i++){if(songById(allFin[i].songId) && !allFin[i].dq) fin.push(allFin[i]);}
-  fin.sort(function(a, b) { var pa = (a.place !== undefined && a.place !== null) ? a.place : 9999; var pb = (b.place !== undefined && b.place !== null) ? b.place : 9999; return pa - pb; });
+  // Sortiert die Battle-Tabelle nach dem tatsächlichen Platz (Actual), von 1 absteigend
+  fin.sort(function(a, b) { 
+    var pa = (a.place !== undefined && a.place !== null) ? a.place : 9999; 
+    var pb = (b.place !== undefined && b.place !== null) ? b.place : 9999; 
+    return pa - pb; 
+  });
 
   var hidden = !!S.battleHidden;
   var myJuryId = (me === "admin") ? "j3" : me;
@@ -2226,7 +2233,7 @@ function battle(){
     // Maximal 2 Zeilen für den Songnamen, damit die Zeile nicht zu hoch wird
     var songInfo = s ? '<div style="display:flex;flex-direction:column;width:100%;"><b style="font-family:var(--display);font-size:0.85rem;color:var(--ink);line-height:1.1; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; word-break:break-word;">'+esc(s.title)+'</b><span style="font-size:0.7rem;color:var(--muted);white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">'+esc(s.artist)+'</span></div>' : '';
     
-    rows+='<tr class="battle-row" '+rowStyle+'><td style="padding:6px 10px; min-width:140px; width:140px; max-width:140px; text-align:left; border-bottom: 3px solid rgba(30,18,60,0.9) !important;"><div style="display:flex;align-items:center;gap:8px;justify-content:flex-start;">'+ccBadge+songInfo+'</div></td>'+guessCells+diffCells+'<td class="c" style="width:50px; border-bottom: 3px solid rgba(30,18,60,0.9) !important;"><b>'+placeActStr+'</b></td></tr>';
+    rows+='<tr class="battle-row" '+rowStyle+'><td style="padding:6px 10px; min-width:180px; width:180px; max-width:180px; text-align:left; border-bottom: 3px solid rgba(30,18,60,0.9) !important;"><div style="display:flex;align-items:center;gap:8px;justify-content:flex-start;">'+ccBadge+songInfo+'</div></td>'+guessCells+diffCells+'<td class="c" style="width:50px; border-bottom: 3px solid rgba(30,18,60,0.9) !important;"><b>'+placeActStr+'</b></td></tr>';
   }
 
   var rankings = [];
@@ -2359,24 +2366,24 @@ function scoreboard(){
     
     var placeDisplay = "-";
     if (x.e.place !== undefined && x.e.place !== null) {
-      var isFinal = (sh === "final" || sh === "all");
-      if (!isFinal) {
-        placeDisplay = x.e.place + ".";
-      } else {
+      if (sh === "all") {
+        // Im "All Songs"-Tab: Zeige SF und GF Platz, falls vorhanden
         var sfPlace = null;
         if (y.shows.sf1) { var sf1e = y.shows.sf1.find(function(e){ return e.songId === x.s.id; }); if(sf1e && sf1e.place) sfPlace = sf1e.place; }
         if (!sfPlace && y.shows.sf2) { var sf2e = y.shows.sf2.find(function(e){ return e.songId === x.s.id; }); if(sf2e && sf2e.place) sfPlace = sf2e.place; }
         
+        var gfPlace = null;
+        if (y.shows.final) { var finE = y.shows.final.find(function(e){ return e.songId === x.s.id; }); if(finE && finE.place) gfPlace = finE.place; }
+
         var parts = [];
-        if (sfPlace) {
-          parts.push('<span style="font-size:0.65rem;color:var(--muted);">SF: '+sfPlace+'.</span>');
-          if (sfPlace <= 10) {
-            parts.push('<span style="font-size:0.75rem;font-weight:800;color:var(--gold);">GF: '+x.e.place+'.</span>');
-          }
-        } else {
-          parts.push('<span style="font-size:0.75rem;font-weight:800;color:var(--gold);">GF: '+x.e.place+'.</span>');
-        }
+        if (sfPlace) parts.push('<span style="font-size:0.65rem;color:var(--muted);">SF: '+sfPlace+'.</span>');
+        if (gfPlace) parts.push('<span style="font-size:0.75rem;font-weight:800;color:var(--gold);">GF: '+gfPlace+'.</span>');
+        
         if (parts.length) placeDisplay = '<div style="display:flex;flex-direction:column;align-items:center;gap:2px;line-height:1.1;">'+parts.join('')+'</div>';
+        else placeDisplay = x.e.place + ".";
+      } else {
+        // Im spezifischen Tab (SF1, SF2, Final): Zeige nur den Platz dieses Tabs
+        placeDisplay = x.e.place + ".";
       }
     }
 
