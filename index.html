@@ -254,6 +254,18 @@ h3{font-family:var(--display);margin:0 0 12px;font-weight:700;letter-spacing:-0.
   background:linear-gradient(135deg, #fff 0%, #f0e8ff 100%);
   color:var(--bg);border-color:transparent;font-weight:800;
 }
+/* Glow Effekt für den aktiven Live-Tab */
+.tabs button.live-active {
+  border: 2px solid var(--red) !important;
+  background: linear-gradient(135deg, rgba(255,77,109,0.2) 0%, rgba(255,45,149,0.1) 100%) !important;
+  color: #fff !important;
+  box-shadow: 0 0 16px rgba(255,77,109,0.8), inset 0 0 10px rgba(255,77,109,0.4) !important;
+  animation: liveTabPulse 1.5s infinite alternate;
+}
+@keyframes liveTabPulse {
+  0% { box-shadow: 0 0 12px rgba(255,77,109,0.6); }
+  100% { box-shadow: 0 0 24px rgba(255,77,109,1), inset 0 0 15px rgba(255,77,109,0.6); }
+}
 .tabs button.final-tab{border-color:rgba(255,209,102,0.4);color:var(--gold);font-weight:700}
 .tabs button.final-tab.on{
   background:linear-gradient(135deg, var(--gold) 0%, #ffae00 100%);
@@ -720,13 +732,13 @@ dialog input,dialog select{width:100%}
 
 .live-current-card::before{
   content:"";
-  position:absolute;top:0;left:0;bottom:0;width:45%; /* Schmaler, damit sie nicht zu weit rechts ist */
+  position:absolute;top:0;left:0;right:0;bottom:0;width:100%;
   background-image:var(--live-flag-url);
-  background-size:cover;background-position:left center;
-  /* Weicher und früher ausblenden */
-  mask-image:linear-gradient(to right, rgba(0,0,0,1) 10%, rgba(0,0,0,0) 100%);
-  -webkit-mask-image:linear-gradient(to right, rgba(0,0,0,1) 10%, rgba(0,0,0,0) 100%);
-  opacity:0.75; /* Etwas kräftiger, da sie jetzt kleiner ist */
+  background-size:cover;background-position:center;
+  /* Mittig zentriert und weich ausgeblendet */
+  mask-image:radial-gradient(circle at center, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 70%);
+  -webkit-mask-image:radial-gradient(circle at center, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 70%);
+  opacity:0.35;
   pointer-events:none;
   z-index: 0;
 }
@@ -922,6 +934,11 @@ dialog input,dialog select{width:100%}
   position: relative;
   overflow: hidden;
   background: rgba(22,13,46,0.6);
+  /* Dicke Trennlinie zwischen den Ländern */
+  border-bottom: 3px solid rgba(94,58,168,0.4) !important;
+}
+.battle-row td {
+  border-bottom: none !important;
 }
 .battle-row::before {
   content: "";position: absolute;left: 0;top: 0;bottom: 0;width: 180px;
@@ -1653,14 +1670,14 @@ function yearView(){
 
   // Show-Tabs (immer sichtbar)
   var showTabs = '';
-  if(y.shows.sf1) showTabs += '<button class="'+(ui.tab==="sf1"?"on":"")+'" data-act="tab" data-tab="sf1">Semi-final 1</button>';
-  if(y.shows.sf2) showTabs += '<button class="'+(ui.tab==="sf2"?"on":"")+'" data-act="tab" data-tab="sf2">Semi-final 2</button>';
-  if(y.shows.final) showTabs += '<button class="'+(ui.tab==="final"?"on":"")+' final-tab" data-act="tab" data-tab="final">Grand Final</button>';
+  if(y.shows.sf1) showTabs += '<button class="'+(ui.tab==="sf1"?"on":"")+(liveActive && ui.tab==="sf1" ? " live-active" : "")+'" data-act="tab" data-tab="sf1">Semi-final 1</button>';
+  if(y.shows.sf2) showTabs += '<button class="'+(ui.tab==="sf2"?"on":"")+(liveActive && ui.tab==="sf2" ? " live-active" : "")+'" data-act="tab" data-tab="sf2">Semi-final 2</button>';
+  if(y.shows.final) showTabs += '<button class="'+(ui.tab==="final"?"on":"")+(liveActive && ui.tab==="final" ? " live-active" : "")+' final-tab" data-act="tab" data-tab="final">Grand Final</button>';
 
   var tabNav = '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;margin-bottom:20px;border-bottom:1px solid var(--line);padding-bottom:16px;">'+
     '<div class="tabs">'+ showTabs +'</div>'+
     '<div style="display:flex;align-items:center;">'+
-      '<button data-act="toggleLiveMode" style="'+liveBtnStyle+'">' + ((liveActive && y.shows[ui.tab]) ? '<span class="live-dot" style="margin-right:8px;vertical-align:middle;"></span>Live beenden' : '🔴 Live Mode (für diesen Tab)') + '</button>'+
+      (y.shows[ui.tab] ? '<button data-act="toggleLiveMode" style="'+liveBtnStyle+'">' + (liveActive ? '<span class="live-dot" style="margin-right:8px;vertical-align:middle;"></span>Live beenden' : '🔴 Live Mode') + '</button>' : '')+
     '</div>'+
     '<div class="tabs">'+
       '<button class="'+(ui.tab==="overview"?"on":"")+'" data-act="tab" data-tab="overview">Overview</button>'+
@@ -1757,18 +1774,18 @@ function liveModeView(sh){
     '</div>';
   }
 
-  // Place badges (Semi & Final)
+  // Place badges (Semi & Final) - neues Design
   var placeBadges = '';
   if (semiPlace) {
     var pNumS = parseInt(semiPlace);
     var badgeClassS = pNumS === 1 ? 'gold' : (pNumS === 2 ? 'silver' : (pNumS === 3 ? 'bronze' : ''));
-    var semiLabel = sh === "sf1" ? "Semi Final 1" : "Semi Final 2";
-    placeBadges += '<div class="live-current-place '+badgeClassS+'" style="margin-right:8px;">'+semiLabel+': '+ semiPlace + '.</div>';
+    var semiLabel = sh === "sf1" ? "SF1" : "SF2";
+    placeBadges += '<div class="live-current-place '+badgeClassS+'" style="margin-right:8px; flex-direction:column; padding:6px 14px; line-height:1.1;"><span style="font-size:0.6rem;opacity:0.8;">'+semiLabel+'</span><span>'+semiPlace+'.</span></div>';
   }
   if (finalPlace) {
     var pNumF = parseInt(finalPlace);
     var badgeClassF = pNumF === 1 ? 'gold' : (pNumF === 2 ? 'silver' : (pNumF === 3 ? 'bronze' : ''));
-    placeBadges += '<div class="live-current-place '+badgeClassF+'">Grand Final: '+ finalPlace + '.</div>';
+    placeBadges += '<div class="live-current-place '+badgeClassF+'" style="flex-direction:column; padding:6px 14px; line-height:1.1;"><span style="font-size:0.6rem;opacity:0.8;">GF</span><span>'+finalPlace+'.</span></div>';
   }
 
   var currentSongDisplay = s ? 
@@ -1929,7 +1946,7 @@ function showView(sh){
       var glowStyle = (st.totalGuessed > 0 && st.correct === st.totalGuessed) ? 'color:var(--gold);' : 'color:var(--muted);';
       nqExtra = ' <span style="font-size:0.7rem;font-weight:700;border-left:1px solid var(--line);padding-left:8px;'+glowStyle+'">' + st.correct + ' / ' + st.totalGuessed + ' NQs</span>';
     }
-    juryBubblesHtml += '<div style="background:var(--panel2-solid);border:1px solid var(--line);padding:7px 14px;border-radius:999px;font-size:0.83rem;font-weight:700;display:inline-flex;align-items:center;gap:8px;"><span style="color:var(--ink)">'+esc(S.jury[j].name)+'</span><span style="'+ptsCol+'">'+ptsText+'</span>'+nqExtra+'</div>';
+    juryBubblesHtml += '<div style="background:linear-gradient(145deg, rgba(30,18,60,0.95) 0%, rgba(15,8,32,0.98) 100%);border:1px solid rgba(94,58,168,0.4);padding:7px 16px;border-radius:999px;font-size:0.83rem;font-weight:700;display:inline-flex;align-items:center;gap:8px;box-shadow:inset 0 1px 0 rgba(255,255,255,0.05), 0 4px 12px rgba(0,0,0,0.3);"><span style="color:var(--ink)">'+esc(S.jury[j].name)+'</span><span style="'+ptsCol+'">'+ptsText+'</span>'+nqExtra+'</div>';
   }
   juryBubblesHtml += '</div>';
 
@@ -2078,13 +2095,13 @@ function showView(sh){
   };
 
   // LTPK-Buchstaben exakt über den Kacheln ausgerichtet (AVG + Place eingerechnet)
-  var labHeaderLeft = '<div style="display:flex; gap:4px; margin-bottom:8px; justify-content:flex-end; padding-right:140px;">';
+  var labHeaderLeft = '<div style="display:flex; gap:4px; margin-bottom:8px; justify-content:flex-end; padding-right:136px;">';
   for(var j=0; j<S.jury.length; j++){
     labHeaderLeft += '<div class="tile-header-letter">'+esc(lab[j])+'</div>';
   }
   labHeaderLeft += '</div>';
 
-  var labHeaderRight = '<div style="display:flex; gap:4px; margin-bottom:8px; justify-content:flex-end; padding-right:140px;">';
+  var labHeaderRight = '<div style="display:flex; gap:4px; margin-bottom:8px; justify-content:flex-end; padding-right:136px;">';
   for(var j=0; j<S.jury.length; j++){
     labHeaderRight += '<div class="tile-header-letter">'+esc(lab[j])+'</div>';
   }
@@ -2122,10 +2139,12 @@ function battle(){
     dupSets[jId] = c;
   }
 
+  // Sortiert die Juroren starr nach L, T, P, K, damit die Reihenfolge immer stimmt
+  var sortedJury = S.jury.slice().sort(function(a, b) { return a.id.localeCompare(b.id); });
   var guessHeaders = "", diffHeaders = "";
-  for(var j=0; j<S.jury.length; j++){ 
-    guessHeaders += '<th class="c">'+esc(S.jury[j].name)+' (Tipp)</th>'; 
-    diffHeaders += '<th class="c">'+esc(S.jury[j].name)+' (Abw.)</th>'; 
+  for(var j=0; j<sortedJury.length; j++){ 
+    guessHeaders += '<th class="c">'+esc(sortedJury[j].name)+' (Tipp)</th>'; 
+    diffHeaders += '<th class="c">'+esc(sortedJury[j].name)+' (Abw.)</th>'; 
   }
 
   var rows="", jurorTotals = {};
@@ -2135,8 +2154,8 @@ function battle(){
     var e=fin[i], s=songById(e.songId), p=S.pred[e.id]||{}, act=e.place;
     var guessCells="", diffCells="";
     
-    for(var j=0; j<S.jury.length; j++){
-      var jId = S.jury[j].id, v = p[jId];
+    for(var j=0; j<sortedJury.length; j++){
+      var jId = sortedJury[j].id, v = p[jId];
       var isOwn = (jId === myJuryId);
       var showHidden = hidden && !isOwn;
       
@@ -2157,10 +2176,10 @@ function battle(){
     }
     var placeActStr = (act!==undefined&&act!==null)?act:"–";
     var rowStyle = (s && s.cc) ? ' style="--flag-url: url(\'https://flagcdn.com/' + s.cc + '.svg\')"' : '';
-    var ccBadge = (s && s.cc) ? '<div class="cc-code" style="left:10px; top:50%; transform:translateY(-50%);">'+esc(getIso3(s.cc))+'</div>' : '';
-    var songInfo = s ? '<div style="display:flex;flex-direction:column;padding-left:45px;"><b style="font-family:var(--display);font-size:0.9rem;color:var(--ink);">'+esc(s.title)+'</b><span style="font-size:0.75rem;color:var(--muted);">'+esc(s.artist)+'</span></div>' : '';
+    var ccBadge = (s && s.cc) ? '<div class="cc-code" style="left:0; top:0; margin:6px; position:relative; display:inline-block;">'+esc(getIso3(s.cc))+'</div>' : '';
+    var songInfo = s ? '<div style="display:flex;flex-direction:column;padding-left:4px;"><b style="font-family:var(--display);font-size:0.9rem;color:var(--ink);">'+esc(s.title)+'</b><span style="font-size:0.75rem;color:var(--muted);">'+esc(s.artist)+'</span></div>' : '';
     
-    rows+='<tr class="battle-row" '+rowStyle+'>'+ccBadge+'<td>'+songInfo+'</td>'+guessCells+diffCells+'<td class="c"><b>'+placeActStr+'</b></td></tr>';
+    rows+='<tr class="battle-row" '+rowStyle+'><td style="min-width:120px;">'+ccBadge+songInfo+'</td>'+guessCells+diffCells+'<td class="c"><b>'+placeActStr+'</b></td></tr>';
   }
 
   var rankings = [];
