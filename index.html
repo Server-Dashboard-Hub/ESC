@@ -971,10 +971,13 @@ dialog input,dialog select{width:100%}
 .battle-row {
   position: relative;
   background: rgba(22,13,46,0.6);
-  /* Dicke Trennlinie zwischen den Ländern */
-  border-bottom: 3px solid rgba(94,58,168,0.4) !important;
 }
-.battle-row td { border-bottom: none !important; position: relative; z-index: 1; }
+.battle-row td { 
+  position: relative; 
+  z-index: 1; 
+  /* Die dicken Linien werden jetzt auf die Zellen angewendet, nicht auf die Zeile */
+  border-bottom: 3px solid rgba(94,58,168,0.4) !important; 
+}
 .battle-row::before {
   content: "";position: absolute;left: 0;top: 0;bottom: 0;width: 180px; /* Nur links */
   background-image: var(--flag-url);
@@ -2178,8 +2181,8 @@ function battle(){
   var sortedJury = S.jury.slice().sort(function(a, b) { return a.id.localeCompare(b.id); });
   var guessHeaders = "", diffHeaders = "";
   for(var j=0; j<sortedJury.length; j++){ 
-    guessHeaders += '<th class="c">'+esc(sortedJury[j].name)+' (Tipp)</th>'; 
-    diffHeaders += '<th class="c">'+esc(sortedJury[j].name)+' (Abw.)</th>'; 
+    guessHeaders += '<th class="c" style="text-align:center;">'+esc(sortedJury[j].name)+' (Tipp)</th>'; 
+    diffHeaders += '<th class="c" style="text-align:center;">'+esc(sortedJury[j].name)+' (Abw.)</th>'; 
   }
 
   var rows="", jurorTotals = {};
@@ -2210,11 +2213,11 @@ function battle(){
       diffCells += '<td class="c">'+diffCell+'</td>';
     }
     var placeActStr = (act!==undefined&&act!==null)?act:"–";
-    var rowStyle = (s && s.cc) ? ' style="--flag-url: url(\'https://flagcdn.com/' + s.cc + '.svg\')"' : '';
+        var rowStyle = (s && s.cc) ? ' style="--flag-url: url(\'https://flagcdn.com/' + s.cc + '.svg\')"' : '';
     var ccBadge = (s && s.cc) ? '<div class="cc-code" style="position:static; transform:none; margin:0; padding:2px 6px; font-size:0.65rem;">'+esc(getIso3(s.cc))+'</div>' : '';
     var songInfo = s ? '<div style="display:flex;flex-direction:column;"><b style="font-family:var(--display);font-size:0.85rem;color:var(--ink);line-height:1.1;">'+esc(s.title)+'</b><span style="font-size:0.7rem;color:var(--muted);">'+esc(s.artist)+'</span></div>' : '';
     
-    rows+='<tr class="battle-row" '+rowStyle+'><td style="padding:4px 8px; text-align:left; min-width:120px;"><div style="display:flex;align-items:center;gap:8px;justify-content:flex-start;">'+ccBadge+songInfo+'</div></td>'+guessCells+diffCells+'<td class="c" style="width:50px;"><b>'+placeActStr+'</b></td></tr>';
+    rows+='<tr class="battle-row" '+rowStyle+'><td style="padding:6px 10px; min-width:110px; text-align:left;"><div style="display:flex;align-items:center;gap:8px;justify-content:flex-start;">'+ccBadge+songInfo+'</div></td>'+guessCells+diffCells+'<td class="c" style="width:50px; border-bottom: 3px solid rgba(94,58,168,0.4) !important;"><b>'+placeActStr+'</b></td></tr>';
   }
 
   var rankings = [];
@@ -2302,14 +2305,16 @@ function scoreboard(){
   
   var lab = initials();
   var sbRows = '';
-  var currentRank = 1;
+  var currentRank = 0;
+  var lastAvg = null;
   
   for(var i=0; i<rows.length; i++){
     var x = rows[i];
     
     if (ui.sbSort !== 'order') {
-      if (i > 0 && x.avg !== rows[i-1].avg) {
+      if (x.avg !== lastAvg) {
         currentRank = i + 1;
+        lastAvg = x.avg;
       }
       var rank = currentRank;
     } else {
@@ -2340,20 +2345,27 @@ function scoreboard(){
       }
     }
     
-    var juryRowHtml = '<div style="display:flex;justify-content:center;margin-bottom:4px;">';
-    for(var j=0; j<S.jury.length; j++){ juryRowHtml += '<span style="width:38px;text-align:center;font-size:0.6rem;font-weight:800;color:var(--muted);">'+lab[j]+'</span>'; }
-    juryRowHtml += '</div>';
-    
-    var placeDisplay = x.place ? x.place + "." : "-";
-    if (sh === "all") {
-      var sfPlace = null;
-      if (y.shows.sf1) { var sf1e = y.shows.sf1.find(function(e){ return e.songId === x.s.id; }); if(sf1e && sf1e.place) sfPlace = sf1e.place; }
-      if (!sfPlace && y.shows.sf2) { var sf2e = y.shows.sf2.find(function(e){ return e.songId === x.s.id; }); if(sf2e && sf2e.place) sfPlace = sf2e.place; }
-      
-      var parts = [];
-      if (sfPlace) parts.push('<span style="font-size:0.65rem;color:var(--muted);">SF: '+sfPlace+'.</span>');
-      if (x.place) parts.push('<span style="font-size:0.75rem;font-weight:800;color:var(--gold);">GF: '+x.place+'.</span>');
-      if (parts.length) placeDisplay = '<div style="display:flex;flex-direction:column;align-items:center;gap:2px;line-height:1.1;">'+parts.join('')+'</div>';
+    var placeDisplay = "-";
+    if (x.e.place !== undefined && x.e.place !== null) {
+      var isFinal = (sh === "final" || sh === "all");
+      if (!isFinal) {
+        placeDisplay = x.e.place + ".";
+      } else {
+        var sfPlace = null;
+        if (y.shows.sf1) { var sf1e = y.shows.sf1.find(function(e){ return e.songId === x.s.id; }); if(sf1e && sf1e.place) sfPlace = sf1e.place; }
+        if (!sfPlace && y.shows.sf2) { var sf2e = y.shows.sf2.find(function(e){ return e.songId === x.s.id; }); if(sf2e && sf2e.place) sfPlace = sf2e.place; }
+        
+        var parts = [];
+        if (sfPlace) {
+          parts.push('<span style="font-size:0.65rem;color:var(--muted);">SF: '+sfPlace+'.</span>');
+          if (sfPlace <= 10) {
+            parts.push('<span style="font-size:0.75rem;font-weight:800;color:var(--gold);">GF: '+x.e.place+'.</span>');
+          }
+        } else {
+          parts.push('<span style="font-size:0.75rem;font-weight:800;color:var(--gold);">GF: '+x.e.place+'.</span>');
+        }
+        if (parts.length) placeDisplay = '<div style="display:flex;flex-direction:column;align-items:center;gap:2px;line-height:1.1;">'+parts.join('')+'</div>';
+      }
     }
 
     sbRows += '<tr class="'+rankClass+'">' +
@@ -2375,7 +2387,8 @@ function scoreboard(){
     '</tr>';
   }
   
-  var headerLTPK = ''; for(var j=0; j<S.jury.length; j++){ headerLTPK += '<span style="display:inline-block;width:26px;text-align:center;font-size:0.7rem;">'+lab[j]+'</span>'; }
+  var headerLTPK = ''; for(var j=0; j<S.jury.length; j++){ headerLTPK += '<span style="display:inline-block;width:26px;text-align:center;font-size:0.7rem;color:var(--muted);">'+lab[j]+'</span>'; }
+  var headerNQ = ''; for(var j=0; j<S.jury.length; j++){ headerNQ += '<span style="display:inline-block;width:26px;text-align:center;font-size:0.6rem;color:var(--muted);">'+lab[j]+'</span>'; }
   
   var sortToggleBtn = '<div class="tabs edle-slider" style="border:none;margin:0;padding:4px;border-radius:999px;display:inline-flex;gap:4px">' +
     '<button class="'+(ui.sbSort==='order'?'on':'')+'" style="border:none;margin:0" data-act="sbSort" data-val="order">Order</button>' +
@@ -2386,7 +2399,7 @@ function scoreboard(){
     '<div><h2>Scoreboard</h2><p class="hint" style="margin:0;">Average points, highest first.</p></div>' +
     '<div>' + sortToggleBtn + '</div>' +
   '</div>'+switcher("sbShow")+
-  (rows.length?'<div class="tw"><table class="sb-table"><thead><tr><th class="c">#</th><th>Song</th><th class="c">Pts</th><th class="c">NQ</th><th class="c">Total</th><th class="c">Ø</th><th class="c">Place</th></tr></thead><tbody>'+sbRows+'</tbody></table></div>':'<p class="empty">Nothing to show yet.</p>');
+  (rows.length?'<div class="tw"><table class="sb-table"><thead><tr><th class="c">#</th><th>Song</th><th class="c">'+headerLTPK+'</th><th class="c">'+headerNQ+'</th><th class="c">Total</th><th class="c">Ø</th><th class="c">Place</th></tr></thead><tbody>'+sbRows+'</tbody></table></div>':'<p class="empty">Nothing to show yet.</p>');
 }
 
 function compareView(){
