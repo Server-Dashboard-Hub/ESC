@@ -1344,7 +1344,6 @@ function yearView(){
   var headerSection = '<h1 class="yeartitle" style="margin-bottom:'+(hostDisplay?'4px':'24px')+'">Eurovision '+esc(titleLabel)+'</h1>' + hostDisplay;
   var liveBtnStyle = liveActive ? 'background:linear-gradient(135deg,#ff2d95,#a855f7);color:#fff;border-color:transparent;font-weight:700;' : 'background:rgba(255,45,149,0.08);color:var(--pink);border-color:rgba(255,45,149,0.4);font-weight:700;';
 
-  // Show-Tabs (immer sichtbar)
   var showTabs = '';
   if(y.shows.sf1) showTabs += '<button class="'+(ui.tab==="sf1"?"on":"")+(liveActiveTab==="sf1" ? " live-active" : "")+'" data-act="tab" data-tab="sf1">Semi-final 1</button>';
   if(y.shows.sf2) showTabs += '<button class="'+(ui.tab==="sf2"?"on":"")+(liveActiveTab==="sf2" ? " live-active" : "")+'" data-act="tab" data-tab="sf2">Semi-final 2</button>';
