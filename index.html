@@ -307,14 +307,15 @@ h3{font-family:var(--display);margin:0 0 12px;font-weight:700;letter-spacing:-0.
 .row > * { position: relative; z-index: 1; }
 
 .cc-code{
-  position: absolute;top: 50%;left: 66px;transform: translateY(-50%);
+  position: absolute;top: 50%;left: 8px;transform: translateY(-50%);
   font-family: var(--display);font-size: 0.6rem;font-weight: 800;
   background: rgba(5,3,15,0.85);color: var(--ink);
   padding: 3px 6px;border-radius: 5px;
   border: 1px solid rgba(255,255,255,0.18);
   letter-spacing: 0.1em;z-index: 2;
 }
-
+.row { grid-template-columns: 46px 1fr auto; }
+.row .no { margin-left: 30px; }
 @media(max-width:700px){ .row{grid-template-columns:1fr;gap:10px} .pl{justify-self:start!important} }
 
 .no{
@@ -339,7 +340,7 @@ h3{font-family:var(--display);margin:0 0 12px;font-weight:700;letter-spacing:-0.
   text-shadow: 0 1px 3px rgba(0,0,0,0.95);
   font-family: var(--display);
   min-width: 0;max-width: 100%;flex-wrap: nowrap;
-  padding-left: 90px; 
+  padding-left: 8px; 
 }
 .meta > span:first-child {
   font-size: clamp(0.68rem, calc(1.35vw - 0.15rem), 1.02rem);
@@ -1893,7 +1894,7 @@ function battle(){
   '</div>';
 
   return topBarBattle +
-  (fin.length?'<div class="tw" style="margin-top:14px"><table class="battle-table"><thead><tr><th>Country</th>'+guessHeaders+diffHeaders+'<th class="c">Actual</th></tr></thead><tbody>'+rows+'</tbody></table></div>' + leaderboardHtml
+  (fin.length?'<div class="tw" style="margin-top:14px;overflow-x:auto;"><table class="battle-table" style="table-layout:auto;width:100%;min-width:760px;"><thead><tr><th style="width:180px;min-width:180px;text-align:left;">Country</th>'+guessHeaders+diffHeaders+'<th class="c" style="width:70px;min-width:70px;">Actual</th></tr></thead><tbody>'+rows+'</tbody></table></div>' + leaderboardHtml
   :'<p class="empty">Bitte wähle zuerst Songs für das Grand Final aus.</p>');
 }
 
@@ -1931,12 +1932,14 @@ function scoreboard(){
   var sbRows = '';
   
   var rankMap = {};
-  var currentRank = 1;
+  var currentRank = 0;
+  var prevAvg = undefined;
   for (var rIdx=0; rIdx<rows.length; rIdx++) {
-    if (rIdx > 0 && rows[rIdx].avg !== rows[rIdx-1].avg) {
-      currentRank = rIdx + 1;
+    if (rIdx === 0 || rows[rIdx].avg !== prevAvg) {
+      currentRank++;
     }
     rankMap[rIdx] = currentRank;
+    prevAvg = rows[rIdx].avg;
   }
   
   for(var i=0; i<rows.length; i++){
