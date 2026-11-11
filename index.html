@@ -1843,7 +1843,7 @@ function battle(){
     var ccBadge = (s && s.cc) ? '<div class="cc-code" style="position:static; transform:none; margin:0; padding:2px 6px; font-size:0.65rem;">'+esc(getIso3(s.cc))+'</div>' : '';
     var songInfo = s ? '<div style="display:flex;flex-direction:column;width:100%;"><b style="font-family:var(--display);font-size:0.85rem;color:var(--ink);line-height:1.1; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; word-break:break-word;">'+esc(s.title)+'</b><span style="font-size:0.7rem;color:var(--muted);white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">'+esc(s.artist)+'</span></div>' : '';
     
-    rows+='<tr class="battle-row" '+rowStyle+'><td style="padding:6px 10px; min-width:140px; width:140px; max-width:140px; text-align:left; border-bottom: 3px solid rgba(30,18,60,0.9) !important;"><div style="display:flex;align-items:center;gap:8px;justify-content:flex-start;">'+ccBadge+songInfo+'</div></td>'+guessCells+diffCells+'<td class="c" style="width:50px; border-bottom: 3px solid rgba(30,18,60,0.9) !important;"><b>'+placeActStr+'</b></td></tr>';
+    rows+='<tr class="battle-row" '+rowStyle+'><td style="padding:6px 10px; text-align:left; border-bottom: 3px solid rgba(30,18,60,0.9) !important; overflow:hidden;"><div style="display:flex;align-items:center;gap:8px;justify-content:flex-start;min-width:0;">'+ccBadge+songInfo+'</div></td>'+guessCells+diffCells+'<td class="c" style="border-bottom: 3px solid rgba(30,18,60,0.9) !important;"><b>'+placeActStr+'</b></td></tr>';
   }
 
   var rankings = [];
@@ -1888,13 +1888,22 @@ function battle(){
   var hiddenToggle = '<button data-act="toggleBattleHidden" style="padding:7px 16px;font-size:0.85rem;'+(hidden?'background:linear-gradient(135deg,#ff2d95,#a855f7);border-color:transparent;color:#fff;':'background:var(--panel2-solid);color:var(--muted);')+'font-weight:700;">' +
     (hidden ? '👁️ Tipps anzeigen' : '🙈 Tipps verbergen') + '</button>';
 
+  var nJury = sortedJury.length;
+  var colgroupHtml = '<colgroup><col style="width:170px;">';
+  for(var cg=0; cg<nJury; cg++){ colgroupHtml += '<col style="width:62px;">'; } // Tipp
+  for(var cg=0; cg<nJury; cg++){ colgroupHtml += '<col style="width:52px;">'; } // Abw.
+  colgroupHtml += '<col style="width:60px;">'; // Actual
+  colgroupHtml += '</colgroup>';
+
   var topBarBattle = '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:20px;">' +
     '<div><h2 style="margin:0 0 4px">Points Battle</h2><p class="hint" style="margin:0">Trage die Tipps ein — die Abweichung siehst du rechts. 🎯 = Volltreffer.</p></div>' +
     '<div>' + hiddenToggle + '</div>' +
   '</div>';
 
+  var totalMinWidth = 170 + nJury*62 + nJury*52 + 60;
+
   return topBarBattle +
-  (fin.length?'<div class="tw" style="margin-top:14px;overflow-x:auto;"><table class="battle-table" style="table-layout:auto;width:100%;min-width:760px;"><thead><tr><th style="width:180px;min-width:180px;text-align:left;">Country</th>'+guessHeaders+diffHeaders+'<th class="c" style="width:70px;min-width:70px;">Actual</th></tr></thead><tbody>'+rows+'</tbody></table></div>' + leaderboardHtml
+  (fin.length?'<div class="tw" style="margin-top:14px;overflow-x:auto;"><table class="battle-table" style="table-layout:fixed;width:100%;min-width:'+totalMinWidth+'px;">'+colgroupHtml+'<thead><tr><th style="text-align:left;">Country</th>'+guessHeaders+diffHeaders+'<th class="c">Actual</th></tr></thead><tbody>'+rows+'</tbody></table></div>' + leaderboardHtml
   :'<p class="empty">Bitte wähle zuerst Songs für das Grand Final aus.</p>');
 }
 
