@@ -504,6 +504,8 @@ h3{font-family:var(--display);margin:0 0 12px;font-weight:700;letter-spacing:-0.
 
 table{width:100%;border-collapse:separate;border-spacing:0;}
 th,td{padding:4px 4px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+/* Zwingt die erste Spalte im Battle auf die gleiche Breite wie die Datenzellen */
+.battle-table th:first-child { width: 140px; min-width: 140px; max-width: 140px; }
 th{
   color:var(--muted);font-weight:600;font-size:.78rem;
   letter-spacing:0.05em;text-transform:uppercase;
@@ -975,8 +977,8 @@ dialog input,dialog select{width:100%}
 .battle-row td { 
   position: relative; 
   z-index: 1; 
-  /* Die dicken Linien werden jetzt auf die Zellen angewendet, nicht auf die Zeile */
-  border-bottom: 3px solid rgba(94,58,168,0.4) !important; 
+  /* Dunklere, edlere Trennlinien */
+  border-bottom: 3px solid rgba(30,18,60,0.9) !important; 
 }
 .battle-row::before {
   content: "";position: absolute;left: 0;top: 0;bottom: 0;width: 180px; /* Nur links */
@@ -2201,7 +2203,8 @@ function battle(){
         guessCells += '<td class="c"><span class="hidden-pred">•••</span></td>';
       } else {
         var valStr = (v !== undefined && v !== null) ? v : "", isDup = v && dupSets[jId][v] > 1;
-        guessCells += '<td class="c"><input type="number" min="1" max="'+fin.length+'" value="'+valStr+'" class="'+(isDup?"dup":"")+'" data-chg="pred" data-e="'+e.id+'" data-j="'+jId+'" '+(isOwn?'':'readonly')+' style="width:60px;text-align:center"></td>';
+        var canEdit = (me === "admin") || isOwn;
+        guessCells += '<td class="c"><input type="number" min="1" max="'+fin.length+'" value="'+valStr+'" class="'+(isDup?"dup":"")+'" data-chg="pred" data-e="'+e.id+'" data-j="'+jId+'" '+(canEdit?'':'readonly')+' style="width:60px;text-align:center; border-bottom: 3px solid rgba(30,18,60,0.9); background: '+(canEdit?'var(--panel2-solid)':'transparent')+';"></td>';
       }
 
       // ALWAYS SHOW DIFF (even if hidden)
@@ -2213,11 +2216,11 @@ function battle(){
       diffCells += '<td class="c">'+diffCell+'</td>';
     }
     var placeActStr = (act!==undefined&&act!==null)?act:"–";
-        var rowStyle = (s && s.cc) ? ' style="--flag-url: url(\'https://flagcdn.com/' + s.cc + '.svg\')"' : '';
+    var rowStyle = (s && s.cc) ? ' style="--flag-url: url(\'https://flagcdn.com/' + s.cc + '.svg\')"' : '';
     var ccBadge = (s && s.cc) ? '<div class="cc-code" style="position:static; transform:none; margin:0; padding:2px 6px; font-size:0.65rem;">'+esc(getIso3(s.cc))+'</div>' : '';
     var songInfo = s ? '<div style="display:flex;flex-direction:column;"><b style="font-family:var(--display);font-size:0.85rem;color:var(--ink);line-height:1.1;">'+esc(s.title)+'</b><span style="font-size:0.7rem;color:var(--muted);">'+esc(s.artist)+'</span></div>' : '';
     
-    rows+='<tr class="battle-row" '+rowStyle+'><td style="padding:6px 10px; min-width:110px; text-align:left;"><div style="display:flex;align-items:center;gap:8px;justify-content:flex-start;">'+ccBadge+songInfo+'</div></td>'+guessCells+diffCells+'<td class="c" style="width:50px; border-bottom: 3px solid rgba(94,58,168,0.4) !important;"><b>'+placeActStr+'</b></td></tr>';
+    rows+='<tr class="battle-row" '+rowStyle+'><td style="padding:6px 10px; min-width:140px; width:140px; max-width:140px; text-align:left; border-bottom: 3px solid rgba(30,18,60,0.9) !important;"><div style="display:flex;align-items:center;gap:8px;justify-content:flex-start;">'+ccBadge+songInfo+'</div></td>'+guessCells+diffCells+'<td class="c" style="width:50px; border-bottom: 3px solid rgba(30,18,60,0.9) !important;"><b>'+placeActStr+'</b></td></tr>';
   }
 
   var rankings = [];
@@ -2305,18 +2308,25 @@ function scoreboard(){
   
   var lab = initials();
   var sbRows = '';
-  var currentRank = 0;
-  var lastAvg = null;
+  
+  // Vorberechnung der Ränge: 1, 1, 1, 2, 3, 3, 4...
+  var rankMap = {};
+  var currentRank = 1;
+  var currentAvg = null;
+  for (var rIdx=0; rIdx<rows.length; rIdx++) {
+    var rowAvg = rows[rIdx].avg;
+    if (rIdx > 0 && rowAvg !== currentAvg) {
+      currentRank = rIdx + 1;
+    }
+    currentAvg = rowAvg;
+    rankMap[rIdx] = currentRank;
+  }
   
   for(var i=0; i<rows.length; i++){
     var x = rows[i];
     
     if (ui.sbSort !== 'order') {
-      if (x.avg !== lastAvg) {
-        currentRank = i + 1;
-        lastAvg = x.avg;
-      }
-      var rank = currentRank;
+      var rank = rankMap[i];
     } else {
       var rank = idx(x.e.id); 
     }
